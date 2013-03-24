@@ -41,6 +41,7 @@ print pts
 
 fig = []
 axes = []
+tag = infilename.split('/')[-1].split('.dat')[0]
 for i in range(nbins[0]-2):
     #axes.append(figure.add_subplot(nbins[0]-2,nbins[1]-2,i*(nbins[0]-2) + j + 1))
     fig.append(plt.figure())
@@ -51,7 +52,7 @@ for i in range(nbins[0]-2):
     axes[i].imshow(pts[i+1],extent=extent,interpolation='nearest',origin='lower',cmap=plt.cm.coolwarm,axes=axes[i],aspect='auto')
     #axes[i].imshow(vals[i],interpolation='nearest')
 
-    name = "Plots/fig%03d.png" % (i)
+    name = "Plots/%sfig%03d.png" % (tag,i)
     fig[i].savefig(name)
 
 

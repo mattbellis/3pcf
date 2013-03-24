@@ -8,8 +8,15 @@ if ( $1 != '' ) then
     set ngals = $1
 endif
 
-set input0 = '../sample_data/input_'$ngals'k_0.cat'
-set input1 = '../sample_data/input_'$ngals'k_1.cat'
+#set input0 = '../sample_data/input_'$ngals'k_0.cat'
+#set input1 = '../sample_data/input_'$ngals'k_1.cat'
+set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
+set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+#weschler_0.025_0.050_xyz_1k.dat
+#weschler_0.025_0.050_xyz_10k.dat
+#random_0.025_0.050_xyz_1k.dat
+#random_0.025_0.050_xyz_10k.dat
+
 
 ################################################################################
 # Read in data.
@@ -42,7 +49,9 @@ set tag = 'evenbinning_CPU'
 echo "#####################"
 time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
 echo "#####################"
-#time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
+time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
 #echo "#####################"
-#time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
+time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
+#echo "#####################"
+time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
 #echo "#####################"

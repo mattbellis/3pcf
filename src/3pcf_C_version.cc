@@ -9,11 +9,13 @@ using namespace std;
 #define HIST_MIN 0.0 // for degrees
 #define HIST_MAX 100.0 // for degrees
 
-#define DEFAULT_NBINS 10 // for log binning
+#define DEFAULT_NBINS 20 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
 #define CONV_FACTOR 57.2957795 // 180/pi
+
+float max_dist = 0.0;
 
 int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width, int flag)
 {
@@ -63,9 +65,14 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     zdiff = z1-z2;
     float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    //printf("%f %f %f\t",x0,x1,x2);
-    //printf("%f %f %f\t",y0,y1,y2);
-    //printf("%f %f %f\t",z0,z1,z2);
+    if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
+    if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
+    if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
+
+    //printf("---------\n");
+    //printf("%f %f %f\n",x0,x1,x2);
+    //printf("%f %f %f\n",y0,y1,y2);
+    //printf("%f %f %f\n",z0,z1,z2);
     //printf("%f %f %f\n",dist0,dist1,dist2);
 
     // Sort the distances
@@ -149,7 +156,8 @@ int main(int argc, char **argv)
     float conv_factor_angle = 57.2957795; // 180/pi // For if we need to convert arcdistance to arcsec or arcmin
 
     float hist_min = 0;
-    float hist_max = 1.8;
+    //float hist_max = 1.8;
+    float hist_max = 7000.0;
     int nbins = DEFAULT_NBINS;
     float bin_width = (hist_max-hist_min)/nbins;
     int flag = 0;
@@ -260,22 +268,22 @@ int main(int argc, char **argv)
     // 2 - middle one is different (DRD or RDR)
     // 3 - last one is different (RRD or DDR)
     bool which_three_input_files = 0;
-    if (strcmp(argv[1],argv[2])==0 && strcmp(argv[1],argv[3])==0)
+    if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])==0)
     {
         which_three_input_files = 0;
         printf("Using the same file! (DDD or RRR)\n");
     }
-    else if (strcmp(argv[1],argv[2])!=0 && strcmp(argv[2],argv[3])==0)
+    else if (strcmp(argv[optind+0],argv[optind+1])!=0 && strcmp(argv[optind+1],argv[optind+2])==0)
     {
         which_three_input_files = 1;
         printf("Not the same file! (DRR or RDD)\n");
     }
-    else if (strcmp(argv[1],argv[3])!=0 && strcmp(argv[1],argv[3])==0)
+    else if (strcmp(argv[optind+0],argv[optind+2])!=0 && strcmp(argv[optind+0],argv[optind+2])==0)
     {
         which_three_input_files = 2;
         printf("Not the same file! (DRD or RDR)\n");
     }
-    else if (strcmp(argv[1],argv[2])==0 && strcmp(argv[1],argv[3])!=0)
+    else if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])!=0)
     {
         which_three_input_files = 2;
         printf("Not the same file! (RRD or DDR)\n");
@@ -336,10 +344,27 @@ int main(int argc, char **argv)
         {
             printf("%d\n",i);
         }
-
-        for(int j = i+1; j < NUM_GALAXIES[1]; j++)
+        int jmin = 0;
+        if (which_three_input_files==0) // DDD or RRR
+            jmin = i+1;
+        else if (which_three_input_files==1) // DRR or RDD
+            jmin = 0;
+        else if (which_three_input_files==2) // DRD or RDR
+            jmin = 0;
+        else if (which_three_input_files==3) // DDR or RRD
+            jmin = i+1;
+        for(int j = jmin; j < NUM_GALAXIES[1]; j++)
         {
-            for(int k = j+1; k < NUM_GALAXIES[2]; k++)
+            int kmin = 0;
+            if (which_three_input_files==0)
+                kmin = j+1;
+            else if (which_three_input_files==1)
+                kmin = j+1;
+            else if (which_three_input_files==2)
+                kmin = i+1;
+            else if (which_three_input_files==3)
+                kmin = 0;
+            for(int k =kmin; k < NUM_GALAXIES[2]; k++)
             {
                 bool do_calc = 1;
                 //if (which_three_input_files)
@@ -370,9 +395,11 @@ int main(int argc, char **argv)
 
     int index = 0;
     unsigned long total = 0;
+    fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
     for(int i = 0; i < nbins+2; i++)
     {
         printf("%d --------------\n",i);
+        fprintf(outfile,"%d\n",i);
         for(int j = 0; j < nbins+2; j++)
         {
             for(int k = 0; k < nbins+2; k++)
@@ -380,8 +407,10 @@ int main(int argc, char **argv)
 
                 index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i; 
                 printf("%6d ",hist[index]);
+                fprintf(outfile,"%6d ",hist[index]);
                 total += hist[index];
             }
+            fprintf(outfile,"\n");
             printf("\n");
         }
     }
@@ -436,6 +465,7 @@ int main(int argc, char **argv)
 
      */
 
+    fclose(outfile);
     return 0;
 }  
 //////////////////////////////////////////////////////////////////////

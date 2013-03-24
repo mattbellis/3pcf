@@ -43,24 +43,24 @@ NVCC              := $(CUDA_INSTALL_PATH)/bin/nvcc -arch sm_20 $(COMMONFLAGS)
 ################################################################################
 # Rules for Makefile
 ################################################################################
-all: 3pcf 3pcf_C_version
+#all: 3pcf_bellis 3pcf_C_version
+all: 3pcf_C_version
 
-3pcf : $(OBJ_DIR)/3pcf.cu_o
+3pcf_bellis : $(OBJ_DIR)/3pcf_bellis.cu_o
 	mkdir -p $(INSTALL_DIR)
-	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf $(OBJ_DIR)//3pcf.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
+	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_bellis $(OBJ_DIR)//3pcf_bellis.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
 
-$(OBJ_DIR)/3pcf.cu_o : 3pcf.cu
+$(OBJ_DIR)/3pcf_bellis.cu_o : 3pcf_bellis.cu
 	mkdir -p $(OBJ_DIR)
-	$(NVCC) -c $(INCLUDES) -o $(OBJ_DIR)/3pcf.cu_o $<
+	$(NVCC) -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_bellis.cu_o $<
 
 3pcf_C_version : 3pcf_C_version.cc
 	mkdir -p $(INSTALL_DIR)
 	$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
-	#$(CC) -pg -O1 -o $(INSTALL_DIR)/$@ $@.cc
 
 clean:
 	rm -f $(INSTALL_DIR)/3pcf_C_version 
-	rm -f $(INSTALL_DIR)/3pcf 
+	rm -f $(INSTALL_DIR)/3pcf_bellis
 	rm -f $(OBJ_DIR)/*.o 
 	rm -f $(OBJ_DIR)/*.cu_o 
 
