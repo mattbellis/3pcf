@@ -324,14 +324,14 @@ int main(int argc, char **argv)
     // Allocation of histograms.
     ///////////////////////////////////////////////////////////////////////////
 
-    unsigned long *hist;
+    unsigned long long *hist;
     //int nbins;
     int log_binning=flag;
 
     int size_hist = (nbins+2)*(nbins+2)*(nbins+2);
-    int size_hist_bytes = size_hist*sizeof(unsigned long);
+    int size_hist_bytes = size_hist*sizeof(unsigned long long);
 
-    hist = (unsigned long*)malloc(size_hist_bytes);
+    hist = (unsigned long long*)malloc(size_hist_bytes);
     memset(hist, 0, size_hist_bytes);
 
     int x, y;
@@ -394,7 +394,7 @@ int main(int argc, char **argv)
     }  
 
     int index = 0;
-    unsigned long total = 0;
+    unsigned long long total = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
     for(int i = 0; i < nbins+2; i++)
     {
@@ -406,8 +406,8 @@ int main(int argc, char **argv)
             {
 
                 index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i; 
-                printf("%6d ",hist[index]);
-                fprintf(outfile,"%6d ",hist[index]);
+                printf("%ul ",hist[index]);
+                fprintf(outfile,"%ul ",hist[index]);
                 total += hist[index];
             }
             fprintf(outfile,"\n");
@@ -417,7 +417,7 @@ int main(int argc, char **argv)
 
     printf("Total: %d\n",total);
     /*
-       unsigned long total = 0;
+       unsigned long long total = 0;
        float bins_mid = 0;
 
        float lo = hist_lower_range;
