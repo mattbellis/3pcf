@@ -343,6 +343,7 @@ int main(int argc, char **argv)
         if (i%10==0)
         {
             printf("%d\n",i);
+            fflush(stdout); 
         }
         int jmin = 0;
         if (which_three_input_files==0) // DDD or RRR
@@ -415,7 +416,7 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("Total: %d\n",total);
+    printf("Total: %ul\n",total);
     /*
        unsigned long long total = 0;
        float bins_mid = 0;
