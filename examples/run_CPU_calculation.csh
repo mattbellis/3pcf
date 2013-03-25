@@ -8,14 +8,13 @@ if ( $1 != '' ) then
     set ngals = $1
 endif
 
-#set input0 = '../sample_data/input_'$ngals'k_0.cat'
-#set input1 = '../sample_data/input_'$ngals'k_1.cat'
+set which_part = 'all'
+if ( $2 != '' ) then
+    set which_part = $2
+endif
+
 set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
 set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
-#weschler_0.025_0.050_xyz_1k.dat
-#weschler_0.025_0.050_xyz_10k.dat
-#random_0.025_0.050_xyz_1k.dat
-#random_0.025_0.050_xyz_10k.dat
 
 
 ################################################################################
@@ -46,12 +45,27 @@ set tag = 'evenbinning_CPU'
 #set tag = 'log10binning_CPU'
 
 
-echo "#####################"
-time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
-echo "#####################"
-time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
-#echo "#####################"
-time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
-#echo "#####################"
-time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
-#echo "#####################"
+if ( $which_part == 'all' ) then
+    echo "#####################"
+    time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
+    echo "#####################"
+    time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
+    echo "#####################"
+    time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
+    echo "#####################"
+    time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
+    echo "#####################"
+
+else if ( $which_part == '0' ) then
+    echo "#####################"
+    time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
+else if ( $which_part == '1' ) then
+    echo "#####################"
+    time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
+else if ( $which_part == '2' ) then
+    echo "#####################"
+    time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
+else if ( $which_part == '3' ) then
+    echo "#####################"
+    time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
+endif
