@@ -21,7 +21,7 @@ i = 0
 j = 0
 k = 0
 
-vals = np.array(infile.read().split()).astype('int')
+vals = np.array(infile.read().split()).astype('longlong')
 nbins = [vals[0]+2,vals[1]+2,vals[2]+2]
 pts = np.zeros((nbins[0],nbins[1],nbins[2]))
 print nbins
@@ -49,11 +49,14 @@ for i in range(nbins[0]-2):
     extent = [0,nbins[1],0,nbins[2]]
     print extent
     print pts[i+1]
-    axes[i].imshow(pts[i+1],extent=extent,interpolation='nearest',origin='lower',cmap=plt.cm.coolwarm,axes=axes[i],aspect='auto')
+    cs = axes[i].imshow(pts[i+1],extent=extent,interpolation='nearest',origin='lower',cmap=plt.cm.coolwarm,axes=axes[i],aspect='auto')
+    plt.colorbar(cs)
     #axes[i].imshow(vals[i],interpolation='nearest')
 
     name = "Plots/%sfig%03d.png" % (tag,i)
     fig[i].savefig(name)
 
 
+print max(vals)
+print min(vals)
 #plt.show()

@@ -136,7 +136,6 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
 ////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-
     // Needed for parsing command-line arguments.
     extern char *optarg;
     extern int optind, optopt, opterr;
@@ -145,7 +144,6 @@ int main(int argc, char **argv)
     char *outfilename = NULL;
     char defaultoutfilename[256];
     sprintf(defaultoutfilename,"default_out.dat");
-    FILE *binning_file = NULL;
 
     float hist_lower_range = 0.0000001;
     float hist_upper_range = 0;
@@ -209,7 +207,6 @@ int main(int argc, char **argv)
 
         printf("\nMust pass in at least three input files on command line!\n");
         printf("\nUsage: ", argv[0] );
-        //printf(" <cluster_data file> <distances file> \n\n");
         exit(1);
     }
 
