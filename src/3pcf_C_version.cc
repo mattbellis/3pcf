@@ -367,20 +367,8 @@ int main(int argc, char **argv)
                 kmin = 0;
             for(int k =kmin; k < NUM_GALAXIES[2]; k++)
             {
-                bool do_calc = 1;
-                //if (which_three_input_files)
-                //{
-                    //do_calc = 1;
-                //}
-                //else // Doing the same file
-                //{
-                    //if(i > j)
-                        //do_calc=1;
-                    //else
-                        //do_calc=0;
-                //}
-
-                if (do_calc)
+                //bool do_calc = 1;
+                //if (do_calc)
                 {
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                                          h_x[1][j],h_y[1][j],h_z[1][j], \
@@ -417,54 +405,6 @@ int main(int argc, char **argv)
     }
 
     printf("Total: %ul\n",total);
-    /*
-       unsigned long long total = 0;
-       float bins_mid = 0;
-
-       float lo = hist_lower_range;
-       float hi = 0;
-       for(int k=0; k<nbins+1; k++)
-       {
-       if (k==0)
-       {
-    //fprintf(outfile, "Underflow below %.3e %s %lu \n", lo, ",",  hist[k]);
-    }
-    else
-    {
-    if (log_binning_flag==0)
-    {
-    hi = lo + hist_bin_width;
-    }
-    else if (log_binning_flag==1)
-    {
-    //printf("lo: %f\t\tlog(lo): %f\n",lo,log(lo));
-    hi = exp(log(lo) + hist_bin_width);
-    }
-    else if (log_binning_flag==2)
-    {
-    //printf("lo: %f\t\tlog10(lo): %f\n",lo,log10(lo));
-    hi = pow(10,(log10(lo) + hist_bin_width));
-    }
-
-    fprintf(outfile, "%.3e %.3e %lu \n",lo,hi,hist[k]);
-    total += hist[k];
-
-    lo = hi;
-    }
-    }
-    printf("total: %lu \n", total);
-
-    fclose(infile0);
-    fclose(infile1);
-    fclose(outfile);
-
-    free(h_alpha0);
-    free(h_delta0);
-    free(h_alpha1);
-    free(h_delta1);
-    free(hist);
-
-     */
 
     fclose(outfile);
     return 0;
