@@ -136,7 +136,6 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
 ////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-
     // Needed for parsing command-line arguments.
     extern char *optarg;
     extern int optind, optopt, opterr;
@@ -145,7 +144,6 @@ int main(int argc, char **argv)
     char *outfilename = NULL;
     char defaultoutfilename[256];
     sprintf(defaultoutfilename,"default_out.dat");
-    FILE *binning_file = NULL;
 
     float hist_lower_range = 0.0000001;
     float hist_upper_range = 0;
@@ -209,7 +207,6 @@ int main(int argc, char **argv)
 
         printf("\nMust pass in at least three input files on command line!\n");
         printf("\nUsage: ", argv[0] );
-        //printf(" <cluster_data file> <distances file> \n\n");
         exit(1);
     }
 
@@ -368,18 +365,6 @@ int main(int argc, char **argv)
             for(int k =kmin; k < NUM_GALAXIES[2]; k++)
             {
                 bool do_calc = 1;
-                //if (which_three_input_files)
-                //{
-                    //do_calc = 1;
-                //}
-                //else // Doing the same file
-                //{
-                    //if(i > j)
-                        //do_calc=1;
-                    //else
-                        //do_calc=0;
-                //}
-
                 if (do_calc)
                 {
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
@@ -417,54 +402,6 @@ int main(int argc, char **argv)
     }
 
     printf("Total: %ul\n",total);
-    /*
-       unsigned long long total = 0;
-       float bins_mid = 0;
-
-       float lo = hist_lower_range;
-       float hi = 0;
-       for(int k=0; k<nbins+1; k++)
-       {
-       if (k==0)
-       {
-    //fprintf(outfile, "Underflow below %.3e %s %lu \n", lo, ",",  hist[k]);
-    }
-    else
-    {
-    if (log_binning_flag==0)
-    {
-    hi = lo + hist_bin_width;
-    }
-    else if (log_binning_flag==1)
-    {
-    //printf("lo: %f\t\tlog(lo): %f\n",lo,log(lo));
-    hi = exp(log(lo) + hist_bin_width);
-    }
-    else if (log_binning_flag==2)
-    {
-    //printf("lo: %f\t\tlog10(lo): %f\n",lo,log10(lo));
-    hi = pow(10,(log10(lo) + hist_bin_width));
-    }
-
-    fprintf(outfile, "%.3e %.3e %lu \n",lo,hi,hist[k]);
-    total += hist[k];
-
-    lo = hi;
-    }
-    }
-    printf("total: %lu \n", total);
-
-    fclose(infile0);
-    fclose(infile1);
-    fclose(outfile);
-
-    free(h_alpha0);
-    free(h_delta0);
-    free(h_alpha1);
-    free(h_delta1);
-    free(hist);
-
-     */
 
     fclose(outfile);
     return 0;

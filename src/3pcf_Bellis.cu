@@ -8,25 +8,67 @@
 
 using namespace std;
 
-#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 512
+//#define SUBMATRIX_SIZE 256
+#define SUBMATRIX_SIZE 128
+//#define SUBMATRIX_SIZE 16
 
 ////////////////////////////////////////////////////////////////////////
 // Number of histogram bins has to be edited by hand, prior to
 // copmilation.
 ////////////////////////////////////////////////////////////////////////
 
-#define DEFAULT_NBINS 254 
+//#define DEFAULT_NBINS 254 
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
-//#define DEFAULT_NBINS 30 
+#define DEFAULT_NBINS 14 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
+
+////////////////////////////////////////////////////////////////////////
+// Decide into which bin the data go.
+////////////////////////////////////////////////////////////////////////
+__device__ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width, int flag)
+{
+    int bin_index = 0;
+
+    if(dist < hist_min)
+        bin_index = 0;
+    else if(dist >= hist_max)
+        bin_index = nbins + 1;
+    else
+    {
+        if (flag==0)
+        {
+            //printf("%f %f %f\n",dist,hist_min,bin_width);
+            bin_index = int((dist-hist_min)/bin_width) + 1;
+            //printf("here! %d\n",bin_index);
+        }
+        else if (flag==1)// log binning
+        {
+            bin_index = int((log(dist)-log(hist_min))/bin_width) + 1;
+        }
+        else if (flag==2)// log 10 binning
+        {
+            bin_index = int((log10(dist)-log10(hist_min))/bin_width) + 1;
+        }
+    }
+
+    return bin_index;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // Kernel to calculate angular distances between galaxies and histogram
 // the distances.
 ////////////////////////////////////////////////////////////////////////
-__global__ void distance(volatile float *a0, volatile float *d0, volatile float *a1, volatile float *d1, int xind, int yind, int max_xind, int max_yind, volatile int *dev_hist, float hist_min, float hist_max, int nbins, float bin_width, int log_binning=0, bool two_different_files=1, float conv_factor_angle=57.2957795)
+__global__ void distance(float x0, float y0, float z0, \
+        float *x1, float *y1, float *z1, \
+        float *x2, float *y2, float *z2, \
+        int xind, int yind, int max_xind, int max_yind, unsigned long *dev_hist, float hist_min, float hist_max, int nbins, float bin_width, int flag=0,  float conv_factor_angle=57.2957795)
+//__global__ void distance(float x0)
 {
 
     ////////////////////////////////////////////////////////////////////////////
@@ -35,16 +77,18 @@ __global__ void distance(volatile float *a0, volatile float *d0, volatile float 
     ////////////////////////////////////////////////////////////////////////////
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
 
+    int tot_hist_size = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
+
     idx += xind;
 
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    __shared__ int shared_hist[DEFAULT_NBINS+2];
+    __shared__ int shared_hist[(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
-        for (int i=0;i<nbins+2;i++)
+        for (int i=0;i<tot_hist_size;i++)
             shared_hist[i] = 0;
     }
     __syncthreads();
@@ -53,18 +97,6 @@ __global__ void distance(volatile float *a0, volatile float *d0, volatile float 
     if (idx<max_xind)
     {
         int i=0;
-
-        float alpha_rad = a0[idx];
-        float delta0 = d0[idx];
-        float cos_d0 = cos(delta0);
-        float sin_d0 = sin(delta0);
-        float dist;
-
-        int bin_index = 0; 
-
-        float a_diff, sin_a_diff, cos_a_diff;
-        float cos_d1, sin_d1, numer, denom, mult1, mult2;    
-        float d1_rad;
 
         bool do_calc = 1;
 
@@ -77,61 +109,87 @@ __global__ void distance(volatile float *a0, volatile float *d0, volatile float 
 
         for(i=yind; i<ymax; i++)
         {
-            if (two_different_files)
-            {
-                do_calc = 1;
-            }
-            else // Doing the same file
-            {
-                if(idx > i)
-                    do_calc=1;
-                else
-                    do_calc=0;
-            }
+            //if (two_different_files)
+            //{
+            //do_calc = 1;
+            //}
+            //else // Doing the same file
+            //{
+            //if(idx > i)
+            //do_calc=1;
+            //else
+            //do_calc=0;
+            //}
             //if(idx > i) ///////// CHECK THIS
             if (do_calc)
             {
-                a_diff = a1[i] - alpha_rad;
-                d1_rad = d1[i];
 
-                sin_a_diff = sin(a_diff);
-                cos_a_diff = cos(a_diff);
+                float xdiff = x0-x1[idx];
+                float ydiff = y0-y1[idx];
+                float zdiff = z0-z1[idx];
+                float dist0 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                sin_d1 = sin(d1_rad);
-                cos_d1 = cos(d1_rad);
+                xdiff = x0-x2[i];
+                ydiff = y0-y2[i];
+                zdiff = z0-z2[i];
+                float dist1 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                mult1 = cos_d1 * cos_d1 * sin_a_diff * sin_a_diff;
-                mult2 = cos_d0 * sin_d1 - sin_d0 * cos_d1 * cos_a_diff;
-                mult2 = mult2 * mult2;
+                xdiff = x1[idx]-x2[i];
+                ydiff = y1[idx]-y2[i];
+                zdiff = z1[idx]-z2[i];
+                float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                numer = sqrt(mult1 + mult2); 
+                bool b0 = dist0<dist1;
+                bool b1 = dist1<dist2;
+                bool b2 = dist0<dist2;
 
-                denom = sin_d0 *sin_d1 + cos_d0 * cos_d1 * cos_a_diff;
+                int i0=-1; // shortest
+                int i1=-1; // middle
+                int i2=-1; // longest
 
-                dist = atan2(numer,denom);  
-                dist *= conv_factor_angle;  // Convert to degrees or what have you.
-
-                if(dist < hist_min)
-                    bin_index = 0; 
-                else if(dist >= hist_max)
-                    bin_index = nbins + 1;
-                else
+                if (b0==true && b1==true)
                 {
-                    if (log_binning==0)
-                    {
-                        bin_index = int((dist-hist_min)/bin_width) + 1;
-                    }
-                    else if (log_binning==1)// log binning
-                    {
-                        bin_index = int((log(dist)-log(hist_min))/bin_width) + 1;
-                    }
-                    else if (log_binning==2)// log 10 binning
-                    {
-                        bin_index = int((log10(dist)-log10(hist_min))/bin_width) + 1;
-                    }
+                    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                }
+                else if (b0==false && b1==false)
+                {
+                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                }
+                else if (b0==true && b1==false && b2==true)
+                {
+                    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                }
+                else if (b0==false && b1==true && b2==true)
+                {
+                    i0 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                }
+                else if (b0==true && b1==false && b2==false)
+                {
+                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                }
+                else if (b0==false && b1==true && b2==false)
+                {
+                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
                 }
 
-                atomicAdd(&shared_hist[bin_index],1);
+                int nhistbins = nbins+2;
+                int nhistbins2 = nhistbins*nhistbins;
+                int totbin = nhistbins2*i2 + nhistbins*i1 + i0;
+
+                atomicAdd(&shared_hist[totbin],1);
+                //atomicAdd(&shared_hist[3],1);
 
             }
         }
@@ -141,8 +199,13 @@ __global__ void distance(volatile float *a0, volatile float *d0, volatile float 
 
     if(threadIdx.x==0)
     {
-        for(int i=0;i<nbins+2;i++)
-            dev_hist[i+(blockIdx.x*(nbins+2))]=shared_hist[i];
+        for(int i=0;i<tot_hist_size;i++)
+        {
+            dev_hist[i+(blockIdx.x*tot_hist_size)]=shared_hist[i];
+            //dev_hist[i+(blockIdx.x*tot_hist_size)]=1;
+            //dev_hist[10]=1;
+        }
+        dev_hist[4]=10000;
     }
 
 }
@@ -165,13 +228,19 @@ int main(int argc, char **argv)
     float hist_lower_range = 0.0000001;
     float hist_upper_range = 0;
     int nbins = DEFAULT_NBINS;
-    float hist_bin_width = 0.05;
     int log_binning_flag = 0; // False
 
     float scale_factor = 1.0; // For if we need to convert input to arcsec or arcmin
     float conv_factor_angle = 57.2957795; // 180/pi // For if we need to convert arcdistance to arcsec or arcmin
 
     bool silent_on_GPU_testing = false;
+
+    float hist_min = 0;
+    //float hist_max = 1.8;
+    float hist_max = 7000.0;
+    float bin_width = (hist_max-hist_min)/nbins;
+    float hist_bin_width = bin_width; // For now
+    int flag = 0;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +257,7 @@ int main(int argc, char **argv)
                 break;
             case 'l':
                 log_binning_flag = atoi(optarg);
-                printf("Will use log binning.\n");
+                printf("Will use binning %d.\n",log_binning_flag);
                 break;
             case 's':
                 scale_factor = 206264.0; // To convert arcseconds to radians.
@@ -218,12 +287,11 @@ int main(int argc, char **argv)
         }
     }
 
-    if (argc < 2)
+    if (argc < 3)
     {
 
-        printf("\nMust pass in at least two input files on command line!\n");
+        printf("\nMust pass in at least three input files on command line!\n");
         printf("\nUsage: ", argv[0] );
-        //printf(" <cluster_data file> <distances file> \n\n");
         exit(1);
     }
 
@@ -265,26 +333,46 @@ int main(int argc, char **argv)
     }
     printf("hist_upper_range: %f\n",hist_upper_range);
 
-    FILE *infile0, *infile1, *outfile ;
-    infile0 = fopen(argv[optind],"r");
-    infile1 = fopen(argv[optind+1],"r");
+    float *h_x[3], *h_y[3], *h_z[3];
+    float *d_x[3], *d_y[3], *d_z[3];
 
-    printf("Opening input file 0: %s\n",argv[optind]);
-    printf("Opening input file 1: %s\n",argv[optind+1]);
+    // Open the input files and the output file.
+    FILE *infile[3], *outfile;
+    for (int i=0;i<3;i++)
+    {
+        infile[i] = fopen(argv[optind+i],"r");
+        printf("Opening input file %d: %s\n",i,argv[optind+i]);
+    }
     outfile = fopen(outfilename, "w");
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Check to see if the two files are actually the same file.
-    // This is the case for the DD and RR calculations and change slightly
-    // the exact calculations being performed.
-    ////////////////////////////////////////////////////////////////////////////
-    bool two_different_files = 1;
-    if (strcmp(argv[optind],argv[optind+1])==0)
+    // Determine which combination of files we are doing.
+    // 0 - all the same (DDD or RRR)
+    // 1 - first one is different (DRR or RDD)
+    // 2 - middle one is different (DRD or RDR)
+    // 3 - last one is different (RRD or DDR)
+    bool which_three_input_files = 0;
+    if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])==0)
     {
-        two_different_files = 0;
-        printf("Using the same file!\n");
+        which_three_input_files = 0;
+        printf("Using the same file! (DDD or RRR)\n");
     }
-    printf("\n");
+    else if (strcmp(argv[optind+0],argv[optind+1])!=0 && strcmp(argv[optind+1],argv[optind+2])==0)
+    {
+        which_three_input_files = 1;
+        printf("Not the same file! (DRR or RDD)\n");
+    }
+    else if (strcmp(argv[optind+0],argv[optind+2])!=0 && strcmp(argv[optind+0],argv[optind+2])==0)
+    {
+        which_three_input_files = 2;
+        printf("Not the same file! (DRD or RDR)\n");
+    }
+    else if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])!=0)
+    {
+        which_three_input_files = 2;
+        printf("Not the same file! (RRD or DDR)\n");
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////
     // Now get the info from the device.
     ////////////////////////////////////////////////////////////////////////////
@@ -292,10 +380,12 @@ int main(int argc, char **argv)
     {
         printf("\n------ CUDA device diagnostics ------\n\n");
 
-        int tot_gals = 100000;
+        //int tot_gals = NUM_GALAXIES[0];
+        int tot_gals = 1000;
         int nx = SUBMATRIX_SIZE;
+        //int ncalc = nx * nx;
         int ncalc = nx * nx;
-        int gpu_mem_needed = int(tot_gals * sizeof(float)) * 2; // need to allocate ra, dec.
+        int gpu_mem_needed = int(tot_gals * sizeof(float)) * 9; // need to allocate ra, dec.
         printf("Requirements: %d calculations and %d bytes memory on the GPU \n\n", ncalc, gpu_mem_needed);
 
         int deviceCount = 0;
@@ -317,7 +407,7 @@ int main(int argc, char **argv)
             printf("\nDevice %d: \"%s\"\n", dev, deviceProp.name);
 
             printf("  Total amount of global memory:                 %.0f MBytes (%llu bytes)\n",
-                    (float)deviceProp.totalGlobalMem/1048576.0f, (unsigned long long) deviceProp.totalGlobalMem);
+                    (float)deviceProp.totalGlobalMem/1048576.0f, (unsigned long) deviceProp.totalGlobalMem);
 
 
             printf("  Warp size:                                     %d\n", deviceProp.warpSize);
@@ -335,7 +425,7 @@ int main(int argc, char **argv)
             printf("\n*************\n");
 
             // check memory
-            if((unsigned long long) deviceProp.totalGlobalMem < gpu_mem_needed) printf(" FAILURE: Not eneough memeory on device for this calculation! \n");
+            if((unsigned long) deviceProp.totalGlobalMem < gpu_mem_needed) printf(" FAILURE: Not eneough memeory on device for this calculation! \n");
             else
             {
                 printf("Hurrah! This device has enough memory to perform this calculation\n");
@@ -365,84 +455,68 @@ int main(int argc, char **argv)
 
         printf("\n------ End CUDA device diagnostics ------\n\n");
     }
-    ////////////////////////////////////////////////////////////////////////////
-
-    float *d_alpha0, *d_delta0;
-    float *h_alpha0, *h_delta0;
-
-    float *d_alpha1, *d_delta1;
-    float *h_alpha1, *h_delta1;
-
-    int NUM_GALAXIES0;
-    int NUM_GALAXIES1;
 
     //////////////////////////////////////////////////////////////////////
     // Read in the galaxy files.
     ////////////////////////////////////////////////////////////////////////////
-    // Read in the first file
+    ////////////////////////////////////////////////////////////////////////////
+    // Read in the files.
     ////////////////////////////////////////////////////////////////////////////
 
-    fscanf(infile0, "%d", &NUM_GALAXIES0);
+    int NUM_GALAXIES[3] = {0.0,0.0,0.0};
+    int size_of_galaxy_array[3] = {0.0,0.0,0.0};
+    float temp0, temp1, temp2;
 
-    int size_of_galaxy_array0 = NUM_GALAXIES0 * sizeof(float);    
-    printf("SIZE 0 # GALAXIES: %d\n",NUM_GALAXIES0);
-
-    h_alpha0 = (float*)malloc(size_of_galaxy_array0);
-    h_delta0 = (float*)malloc(size_of_galaxy_array0);
-    float temp0, temp1;
-
-    for(int i=0; i<NUM_GALAXIES0; i++)
+    for (int i=0;i<3;i++)
     {
-        fscanf(infile0, "%f %f", &temp0, &temp1);
-        h_alpha0[i] = temp0/scale_factor;
-        h_delta0[i] = temp1/scale_factor;
-        //if (i<10)
-        //printf("%e %e\n", h_alpha0[i], h_delta0[i]);
-    }
+        fscanf(infile[i], "%d", &NUM_GALAXIES[i]);
+        size_of_galaxy_array[i] = NUM_GALAXIES[i] * sizeof(float);
+        printf("SIZE %d # GALAXIES: %d\n",i,NUM_GALAXIES[i]);
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Read in the second file
-    ////////////////////////////////////////////////////////////////////////////
+        h_x[i] = (float*)malloc(size_of_galaxy_array[i]);
+        h_y[i] = (float*)malloc(size_of_galaxy_array[i]);
+        h_z[i] = (float*)malloc(size_of_galaxy_array[i]);
 
-    fscanf(infile1, "%d", &NUM_GALAXIES1);
-
-    int size_of_galaxy_array1 = NUM_GALAXIES1 * sizeof(float);    
-    printf("SIZE 1 # GALAXIES: %d\n",NUM_GALAXIES1);
-
-    h_alpha1 = (float*)malloc(size_of_galaxy_array1);
-    h_delta1 = (float*)malloc(size_of_galaxy_array1);
-
-    for(int i=0; i<NUM_GALAXIES1; i++)
-    {
-        fscanf(infile1, "%f %f", &temp0, &temp1);
-        h_alpha1[i] = temp0/scale_factor;
-        h_delta1[i] = temp1/scale_factor;
-        //if (i<10)
-        //printf("%e %e\n", h_alpha1[i], h_delta1[i]);
+        for(int j=0; j<NUM_GALAXIES[i]; j++)
+        {
+            fscanf(infile[i], "%f %f %f", &temp0, &temp1, &temp2);
+            h_x[i][j] = temp0/scale_factor;
+            h_y[i][j] = temp1/scale_factor;
+            h_z[i][j] = temp2/scale_factor;
+            //if (j<10)
+            //printf("%e %e %e\n", h_x[i][j],h_y[i][j],h_z[i][j]);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // Allocation of histogram
     ///////////////////////////////////////////////////////////////////////////
+    // FROM C CODE /////////
+    unsigned long *hist;
+    unsigned long *dev_hist;
 
-    int *hist, *dev_hist;
+    ////////////////////////////////////////////////////////////////////////////
+    // This is the total number of bins/bytes we need for all of the 
+    // different histograms we'll be creating
+    ////////////////////////////////////////////////////////////////////////////
+    int tot_nbins = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
+    int size_hist = SUBMATRIX_SIZE*tot_nbins;
+    int size_hist_bytes = size_hist*sizeof(unsigned long);
 
-    int size_hist = SUBMATRIX_SIZE * (nbins+2);
-    int size_hist_bytes = size_hist*sizeof(int);
+    printf("Size of histogram: %d bins\t%d bytes\n",size_hist,size_hist_bytes);
 
-    hist = (int*)malloc(size_hist_bytes);
+    hist = (unsigned long*)malloc(size_hist_bytes);
     memset(hist, 0, size_hist_bytes);
 
-    printf("Size of histogram: %d bytes\n",size_hist_bytes);
     cudaMalloc((void **) &dev_hist, (size_hist_bytes));
     cudaMemset(dev_hist, 0, size_hist_bytes);
 
-    unsigned long  *hist_array;
+    unsigned long *summed_hist;
 
-    int hist_array_size = (nbins+2) * sizeof(unsigned long);
-    hist_array =  (unsigned long*)malloc(hist_array_size);
-    printf("Size of histogram array: %d bytes\n",hist_array_size);
-    memset(hist_array,0,hist_array_size); 
+    int summed_hist_size = tot_nbins * sizeof(unsigned long);
+    summed_hist =  (unsigned long*)malloc(summed_hist_size);
+    printf("Size of summed histogram array: %d bins\t%d bytes\n",(tot_nbins),summed_hist_size);
+    memset(summed_hist,0,summed_hist_size); 
 
     ////////////////////////////////////////////////////////////////////////////
     // Define the grid and block size
@@ -451,135 +525,187 @@ int main(int argc, char **argv)
     // 128*4 = 512, the amount of memory needed for one histogram.
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
-    grid.x = 8192/(DEFAULT_NBINS+2); // Is this the number of blocks?
+    //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
+    grid.x = 4; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     // SUBMATRIX is the number of threads per warp? Per kernel call?
+    printf("# of blocks per grid:  grid.x:  %d\n",grid.x);
+    printf("# of thread per block: block.x: %d\n",block.x);
     ////////////////////////////////////////////////////////////////////////////
 
-    cudaMalloc((void **) &d_alpha0, size_of_galaxy_array0 );
-    cudaMalloc((void **) &d_delta0, size_of_galaxy_array0 );
-
-    cudaMalloc((void **) &d_alpha1, size_of_galaxy_array1 );
-    cudaMalloc((void **) &d_delta1, size_of_galaxy_array1 );
-
     // Check to see if we allocated enough memory.
-    if (0==d_alpha0 || 0==d_delta0 || 0==d_alpha1 || 0==d_delta1 || 0==dev_hist)
+    for (int i=0;i<3;i++)
     {
-        printf("couldn't allocate memory\n");
+        cudaMalloc((void **) &d_x[i], size_of_galaxy_array[i] );
+        cudaMalloc((void **) &d_y[i], size_of_galaxy_array[i] );
+        cudaMalloc((void **) &d_z[i], size_of_galaxy_array[i] );
+
+        //printf("Size: %d\n",size_of_galaxy_array[i]);
+        if (0==d_x[i] || 0==d_y[i] || 0==d_z[i])
+        {
+            printf("Couldn't allocate memory on the GPU for the galaxy arrays!\n");
+            printf("Size: %d\n",size_of_galaxy_array[i]);
+            return 1;
+        }
+
+        cudaMemset(d_x[i],0,size_of_galaxy_array[i]);
+        cudaMemset(d_y[i],0,size_of_galaxy_array[i]);
+        cudaMemset(d_z[i],0,size_of_galaxy_array[i]);
+
+        //printf("gal: %f\n",h_x[i][0]);
+        cudaMemcpy(d_x[i], h_x[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
+        cudaMemcpy(d_y[i], h_y[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
+        cudaMemcpy(d_z[i], h_z[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
+
+    } 
+
+    if ( 0==dev_hist )
+    {
+        printf("Couldn't allocate memory for the histogram on the GPU!\n");
         return 1;
     }
 
-    // Initialize array to all 0's
-    cudaMemset(d_alpha0,0,size_of_galaxy_array0);
-    cudaMemset(d_delta0,0,size_of_galaxy_array0);
-    cudaMemset(d_alpha1,0,size_of_galaxy_array1);
-    cudaMemset(d_delta1,0,size_of_galaxy_array1);
-
-    cudaMemcpy(d_alpha0, h_alpha0, size_of_galaxy_array0, cudaMemcpyHostToDevice );
-    cudaMemcpy(d_delta0, h_delta0, size_of_galaxy_array0, cudaMemcpyHostToDevice );
-    cudaMemcpy(d_alpha1, h_alpha1, size_of_galaxy_array1, cudaMemcpyHostToDevice );
-    cudaMemcpy(d_delta1, h_delta1, size_of_galaxy_array1, cudaMemcpyHostToDevice );
-
     int x, y;
-    int num_submatrices_x = NUM_GALAXIES0 / SUBMATRIX_SIZE;
-    int num_submatrices_y = NUM_GALAXIES1 / SUBMATRIX_SIZE;
-    // Take care of edges of matrix.
-    if (NUM_GALAXIES0%SUBMATRIX_SIZE != 0)
+    //int num_submatrices_x = NUM_GALAXIES0 / SUBMATRIX_SIZE;
+    //int num_submatrices_y = NUM_GALAXIES1 / SUBMATRIX_SIZE;
+    int num_submatrices[3] = {0, 0, 0};
+    for (int i=0;i<3;i++)
     {
-        num_submatrices_x += 1;
-    }
-    if (NUM_GALAXIES1%SUBMATRIX_SIZE != 0)
-    {
-        num_submatrices_y += 1;
+        num_submatrices[i] = NUM_GALAXIES[i]/SUBMATRIX_SIZE;
+        // Take care of edges of matrix.
+        if (NUM_GALAXIES[i]%SUBMATRIX_SIZE != 0)
+        {
+            num_submatrices[i] += 1;
+        }
     }
 
 
     printf("Breaking down the calculations.\n");
-    printf("Number of submatrices: %dx%d\n",num_submatrices_x,num_submatrices_y);
+    printf("Number of submatrices: %dx%dx%d\n",num_submatrices[0],num_submatrices[1],num_submatrices[2]);
     printf("Number of calculations per submatrices: %dx%d\n",SUBMATRIX_SIZE,SUBMATRIX_SIZE);
 
+    int xind, yind, zind;
     int bin_index = 0;
-    for(int k = 0; k < num_submatrices_y; k++)
+    //for(int i = 0; i < num_submatrices[0]; i++)
+    for(int i = 0; i < NUM_GALAXIES[0]; i++)
     {
-        y = k*SUBMATRIX_SIZE;
-        //printf("%d %d\n",k,y);
-        for(int j = 0; j < num_submatrices_x; j++)
+        if (i%100==0)
         {
-            x = j*SUBMATRIX_SIZE; 
-
-            //printf("----\n");
-            //printf("%d %d\t\t%d %d\n",k,y,j,x);
-            //printf("----\n");
-
-            // Set the histogram to all zeros each time.
-            cudaMemset(dev_hist,0,size_hist_bytes);
-
-            int max_x = NUM_GALAXIES0;
-            int max_y = NUM_GALAXIES1;
-
-            distance<<<grid,block>>>(d_alpha0, d_delta0,d_alpha1, d_delta1, x, y, max_x, max_y, dev_hist, hist_lower_range, hist_upper_range, nbins, hist_bin_width, log_binning_flag, two_different_files,conv_factor_angle);
-            cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
-
-            ////////////////////////////////////////////////////////////////////
-            // Sum up the histograms from each thread (hist).
-            ////////////////////////////////////////////////////////////////////
-            for(int m=0; m<size_hist; m++)
+            printf("%d\n",i);
+            fflush(stdout);
+        }
+        yind = i*SUBMATRIX_SIZE;
+        int jmin = 0;
+        if (which_three_input_files==0) // DDD or RRR
+            jmin = 0;
+        else if (which_three_input_files==1) // DRR or RDD
+            jmin = 0;
+        else if (which_three_input_files==2) // DRD or RDR
+            jmin = 0;
+        else if (which_three_input_files==3) // DDR or RRD
+            jmin = 0;
+        for(int j = jmin; j < num_submatrices[1]; j++)
+        {
+            xind = j*SUBMATRIX_SIZE;
+            int kmin = 0;
+            if (which_three_input_files==0)
+                kmin = j;
+            else if (which_three_input_files==1)
+                kmin = j;
+            else if (which_three_input_files==2)
+                kmin = i;
+            else if (which_three_input_files==3)
+                kmin = 0;
+            for(int k =kmin; k < num_submatrices[2]; k++)
             {
-                bin_index = m%(nbins+2);
-                hist_array[bin_index] += hist[m];
-            }    
-        }  
+                //bool do_calc = 1;
+                //if (do_calc)
+                {
+
+                    // Set the histogram to all zeros each time.
+                    cudaMemset(dev_hist,0,size_hist_bytes);
+
+                    int max_x = NUM_GALAXIES[1];
+                    int max_y = NUM_GALAXIES[2];
+
+                    //printf("here\n");
+                    //printf("i: %d\n",i);
+                    //printf("xind: %d\n",xind);
+                    //printf("yind: %d\n",yind);
+                    //printf("max_x: %d\n",max_x);
+                    //printf("max_y: %d\n",max_y);
+                    distance<<<grid,block>>>(h_x[0][i],h_y[0][i],h_z[0][i], \
+                            d_x[1],d_y[1],d_z[1],\
+                            d_x[2],d_y[2],d_z[2],\
+                            xind, yind, max_x, max_y, \
+                            dev_hist, hist_lower_range, hist_upper_range, nbins, hist_bin_width, log_binning_flag, conv_factor_angle);
+                    //printf("there\n");
+
+                    cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
+
+                    //cudaError_t error = cudaGetLastError();
+                    //printf("ERROR: %s\n", cudaGetErrorString(error) );
+
+                    ////////////////////////////////////////////////////////////////////
+                    // Sum up the histograms from each thread (hist).
+                    ////////////////////////////////////////////////////////////////////
+                    for(int m=0; m<size_hist; m++)
+                    {
+                        bin_index = m%(tot_nbins);
+                        //if (hist[m]!=0)
+                        //{
+                            //printf("%d %ul\n",m,hist[m]);
+                        //}
+                        summed_hist[bin_index] += hist[m];
+                    }    
+                }
+            }  
+        }
     }
+
+    cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
     unsigned long total = 0;
-
-    float lo = hist_lower_range;
-    float hi = 0;
-    for(int k=0; k<nbins+1; k++)
+    int index = 0;
+    fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
+    for(int i = 0; i < nbins+2; i++)
     {
-        if (k==0)
+        printf("%d --------------\n",i);
+        fprintf(outfile,"%d\n",i);
+        for(int j = 0; j < nbins+2; j++)
         {
-            //fprintf(outfile, "Underflow below %.3e %s %lu \n", lo, ",",  hist_array[k]);
-        }
-        else
-        {
-            if (log_binning_flag==0)
+            for(int k = 0; k < nbins+2; k++)
             {
-                hi = lo + hist_bin_width;
-            }
-            else if (log_binning_flag==1)
-            {
-                //printf("lo: %f\t\tlog(lo): %f\n",lo,log(lo));
-                hi = exp(log(lo) + hist_bin_width);
-            }
-            else if (log_binning_flag==2)
-            {
-                //printf("lo: %f\t\tlog10(lo): %f\n",lo,log10(lo));
-                hi = pow(10,(log10(lo) + hist_bin_width));
-            }
 
-            fprintf(outfile, "%.3e %.3e %lu \n",lo,hi,hist_array[k]);
-            total += hist_array[k];
-
-            lo = hi;
+                index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i;
+                printf("%ul ",summed_hist[index]);
+                fprintf(outfile,"%ul ",summed_hist[index]);
+                total += summed_hist[index];
+            }
+            fprintf(outfile,"\n");
+            printf("\n");
         }
     }
-    printf("total: %lu \n", total);
 
-    fclose(infile0);
-    fclose(infile1);
+    ////////////////////////////////////////////////////////////////////////////
+    // Close out the files and free up the memory.
+    ////////////////////////////////////////////////////////////////////////////
+    fclose(infile[0]);
+    fclose(infile[1]);
+    fclose(infile[2]);
     fclose(outfile);
 
-    free(h_alpha0);
-    free(h_delta0);
-    free(h_alpha1);
-    free(h_delta1);
-    free(hist);
+    for (int i=0;i<3;i++)
+    {
+        free(h_x[i]);
+        free(h_y[i]);
+        free(h_z[i]);
 
-    cudaFree(d_alpha0);
-    cudaFree(d_delta0);  
-    cudaFree(d_alpha1);
-    cudaFree(d_delta1);  
+        cudaFree(d_x[i]);
+        cudaFree(d_y[i]);
+        cudaFree(d_z[i]);
+    }
+    free(hist);
     cudaFree(dev_hist);
 
     return 0;

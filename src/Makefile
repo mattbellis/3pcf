@@ -19,8 +19,10 @@ INSTALL_DIR       := ../bin/
 # libraries and header files are installed.
 #SDK_INSTALL_PATH  := ${HOME}/CUDA/SDK_4.0/
 #CUDA_INSTALL_PATH := /opt/cuda/
-SDK_INSTALL_PATH  := $(HOME)/NVIDIA_GPU_Computing_SDK
-CUDA_INSTALL_PATH := /usr/local/cuda/
+#SDK_INSTALL_PATH  := $(HOME)/NVIDIA_GPU_Computing_SDK
+#CUDA_INSTALL_PATH := /usr/local/cuda/
+SDK_INSTALL_PATH  := /usr/include
+CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
 
 # While the INCLUDES and LIBS flags are dependent on the install path, there may 
 # still be some subdirectories that are machine-dependent. 
@@ -43,24 +45,25 @@ NVCC              := $(CUDA_INSTALL_PATH)/bin/nvcc -arch sm_20 $(COMMONFLAGS)
 ################################################################################
 # Rules for Makefile
 ################################################################################
-#all: 3pcf_bellis 3pcf_C_version
-all: 3pcf_C_version
+all: 3pcf_Bellis 3pcf_C_version
+#all: 3pcf_C_version
 
-3pcf_bellis : $(OBJ_DIR)/3pcf_bellis.cu_o
+3pcf_Bellis : $(OBJ_DIR)/3pcf_Bellis.cu_o
 	mkdir -p $(INSTALL_DIR)
-	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_bellis $(OBJ_DIR)//3pcf_bellis.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
+	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_Bellis $(OBJ_DIR)//3pcf_Bellis.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
 
-$(OBJ_DIR)/3pcf_bellis.cu_o : 3pcf_bellis.cu
+$(OBJ_DIR)/3pcf_Bellis.cu_o : 3pcf_Bellis.cu
 	mkdir -p $(OBJ_DIR)
-	$(NVCC) -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_bellis.cu_o $<
+	$(NVCC) -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis.cu_o $<
 
 3pcf_C_version : 3pcf_C_version.cc
 	mkdir -p $(INSTALL_DIR)
-	$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
+	#$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
+	$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc 
 
 clean:
 	rm -f $(INSTALL_DIR)/3pcf_C_version 
-	rm -f $(INSTALL_DIR)/3pcf_bellis
+	rm -f $(INSTALL_DIR)/3pcf_Bellis
 	rm -f $(OBJ_DIR)/*.o 
 	rm -f $(OBJ_DIR)/*.cu_o 
 

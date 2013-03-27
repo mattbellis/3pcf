@@ -7,10 +7,10 @@ import sys
 # Open the input file
 ################################################################################
 infilename = []
-infilename.append('DDD_evenbinning_CPU_1k.dat')
-infilename.append('DDR_evenbinning_CPU_1k.dat')
-infilename.append('DRR_evenbinning_CPU_1k.dat')
-infilename.append('RRR_evenbinning_CPU_1k.dat')
+infilename.append('DDD_evenbinning_CPU_10k.dat')
+infilename.append('DDR_evenbinning_CPU_10k.dat')
+infilename.append('DRR_evenbinning_CPU_10k.dat')
+infilename.append('RRR_evenbinning_CPU_10k.dat')
 
 ddd = None
 ddr = None
@@ -30,7 +30,7 @@ for fcount,f in enumerate(infilename):
     j = 0
     k = 0
 
-    vals = np.array(infile.read().split()).astype('int')
+    vals = np.array(infile.read().split()).astype('longlong')
     nbins = [vals[0]+2,vals[1]+2,vals[2]+2]
     pts = np.zeros((nbins[0],nbins[1],nbins[2]))
     print "here"
@@ -103,6 +103,7 @@ for i in range(nbins[0]-2):
     name = "Plots/tpcf_fig%03d.png" % (i)
     fig[i].savefig(name)
 
+print tpcf
 '''
 for t,t0,t1,t2,t3 in zip(tpcf,ddd,ddr,drr,rrr):
     print " ---------- "
