@@ -1,4 +1,4 @@
-#include<stdio.h>
+#include<stdio.h> 
 #include<string.h>
 #include<stdlib.h>
 #include<math.h>
@@ -9,9 +9,10 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
-//#define SUBMATRIX_SIZE 512
+//#define SUBMATRIX_SIZE 1024
+#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
-#define SUBMATRIX_SIZE 128
+//#define SUBMATRIX_SIZE 128
 //#define SUBMATRIX_SIZE 16
 
 ////////////////////////////////////////////////////////////////////////
@@ -23,6 +24,7 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 #define DEFAULT_NBINS 14 
+//#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
 
@@ -31,7 +33,7 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////
 __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width, int flag)
 {
-    int bin_index = 0;
+    int bin_index = -1;
 
     if(dist < hist_min)
         bin_index = 0;
@@ -41,20 +43,17 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
     {
         if (flag==0)
         {
-            //printf("%f %f %f\n",dist,hist_min,bin_width);
-            bin_index = int((dist-hist_min)/bin_width) + 1;
-            //printf("here! %d\n",bin_index);
+            bin_index = floor((dist-hist_min)/bin_width) + 1;
         }
         else if (flag==1)// log binning
         {
-            bin_index = int((log(dist)-log(hist_min))/bin_width) + 1;
+            bin_index = floor((log(dist)-log(hist_min))/bin_width) + 1;
         }
         else if (flag==2)// log 10 binning
         {
-            bin_index = int((log10(dist)-log10(hist_min))/bin_width) + 1;
+            bin_index = floor((log10(dist)-log10(hist_min))/bin_width) + 1;
         }
     }
-
     return bin_index;
 }
 
@@ -64,10 +63,13 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 // Kernel to calculate angular distances between galaxies and histogram
 // the distances.
 ////////////////////////////////////////////////////////////////////////
-__global__ void distance(float x0, float y0, float z0, \
+__global__ void distance(float *x0, float *y0, float *z0, \
         float *x1, float *y1, float *z1, \
         float *x2, float *y2, float *z2, \
-        int xind, int yind, int max_xind, int max_yind, unsigned long *dev_hist, float hist_min, float hist_max, int nbins, float bin_width, int flag=0,  float conv_factor_angle=57.2957795)
+        int xind, int yind, int zind, \
+        int max_xind, int max_yind, int max_zind, \
+        int *dev_hist, float hist_min, float hist_max, int nbins, \
+        float bin_width, int flag=0,  float conv_factor_angle=57.2957795)
 //__global__ void distance(float x0)
 {
 
@@ -94,103 +96,181 @@ __global__ void distance(float x0, float y0, float z0, \
     __syncthreads();
     ////////////////////////////////////////////////////////////////////////
 
+    float x0i = 0.0;
+    float y0i = 0.0;
+    float z0i = 0.0;
+
+    int i=0;
+    int j=0;
+    int k=0;
+
+    bool do_calc = 1;
+
+    int ymax = yind + SUBMATRIX_SIZE;
+    int zmax = zind + SUBMATRIX_SIZE;
+
+    bool b0 = false;
+    bool b1 = false;
+    bool b2 = false;
+
+    int i0=0; // shortest
+    int i1=0; // middle
+    int i2=0; // longest
+
+    float xdiff = 0.0;
+    float ydiff = 0.0;
+    float zdiff = 0.0;
+    float dist0 = 0.0;
+    float dist1 = 0.0;
+    float dist2 = 0.0;
+
+    int nhistbins = nbins+2;
+    int nhistbins2 = nhistbins*nhistbins;
+    int totbin = 0;
+
+    //if (idx<100)
     if (idx<max_xind)
     {
-        int i=0;
-
-        bool do_calc = 1;
-
-        int ymax = yind + SUBMATRIX_SIZE;
+        x0i = x0[idx];
+        y0i = y0[idx];
+        z0i = z0[idx];
+        //x0i = x0[0];
+        //y0i = y0[0];
+        //z0i = z0[0];
 
         if (ymax>max_yind)
         {
             ymax = max_yind;
         }
 
-        for(i=yind; i<ymax; i++)
+        for(j=yind; j<ymax; j++)
         {
-            //if (two_different_files)
-            //{
-            //do_calc = 1;
-            //}
-            //else // Doing the same file
-            //{
-            //if(idx > i)
-            //do_calc=1;
-            //else
-            //do_calc=0;
-            //}
-            //if(idx > i) ///////// CHECK THIS
-            if (do_calc)
+
+            if (zmax>max_zind)
             {
+                zmax = max_zind;
+            }
 
-                float xdiff = x0-x1[idx];
-                float ydiff = y0-y1[idx];
-                float zdiff = z0-z1[idx];
-                float dist0 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-
-                xdiff = x0-x2[i];
-                ydiff = y0-y2[i];
-                zdiff = z0-z2[i];
-                float dist1 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-
-                xdiff = x1[idx]-x2[i];
-                ydiff = y1[idx]-y2[i];
-                zdiff = z1[idx]-z2[i];
-                float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-
-                bool b0 = dist0<dist1;
-                bool b1 = dist1<dist2;
-                bool b2 = dist0<dist2;
-
-                int i0=-1; // shortest
-                int i1=-1; // middle
-                int i2=-1; // longest
-
-                if (b0==true && b1==true)
+            for(k=zind; k<zmax; k++)
+            {
+                //if (two_different_files)
+                //{
+                //do_calc = 1;
+                //}
+                //else // Doing the same file
+                //{
+                //if(idx > i)
+                //do_calc=1;
+                //else
+                //do_calc=0;
+                //}
+                //if(idx > i) ///////// CHECK THIS
+                if (do_calc)
                 {
-                    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                }
-                else if (b0==false && b1==false)
-                {
-                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                }
-                else if (b0==true && b1==false && b2==true)
-                {
-                    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                }
-                else if (b0==false && b1==true && b2==true)
-                {
-                    i0 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                }
-                else if (b0==true && b1==false && b2==false)
-                {
-                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                }
-                else if (b0==false && b1==true && b2==false)
-                {
-                    i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
-                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                    i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                }
+                    xdiff = x1[idx]-x1[j];
+                    ydiff = y1[idx]-y1[j];
+                    zdiff = z1[idx]-z1[j];
+                    //xdiff = x0i-x1[j];
+                    //ydiff = y0i-y1[j];
+                    //zdiff = z0i-z1[j];
+                    //xdiff = x0i;
+                    //ydiff = y0i;
+                    //zdiff = z0[0];
+                    dist0 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    //dist0 = 2.0*zdiff;
+                    //dist0 = sqrt(10.0);
+                    //dist0 = 100.0;
 
-                int nhistbins = nbins+2;
-                int nhistbins2 = nhistbins*nhistbins;
-                int totbin = nhistbins2*i2 + nhistbins*i1 + i0;
+                    xdiff = x1[idx]-x2[k];
+                    ydiff = y1[idx]-y2[k];
+                    zdiff = z1[idx]-z2[k];
+                    //xdiff = x0i-x2[k];
+                    //ydiff = y0i-y2[k];
+                    //zdiff = z0i-z2[k];
+                    dist1 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    //dist1 = 100.0;
 
-                atomicAdd(&shared_hist[totbin],1);
-                //atomicAdd(&shared_hist[3],1);
+                    xdiff = x1[j]-x2[k];
+                    ydiff = y1[j]-y2[k];
+                    zdiff = z1[j]-z2[k];
+                    dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
+                    b0 = dist0<dist1;
+                    b1 = dist1<dist2;
+                    b2 = dist0<dist2;
+
+                    i0=0; // shortest
+                    i1=0; // middlest
+                    i2=0; // longest
+
+                    if (b0==true && b1==true)
+                    {
+                        i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+                    else if (b0==false && b1==false)
+                    {
+                        i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+                    else if (b0==true && b1==false && b2==true)
+                    {
+                        i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+                    else if (b0==false && b1==true && b2==true)
+                    {
+                        i0 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+                    else if (b0==true && b1==false && b2==false)
+                    {
+                        i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+                    else if (b0==false && b1==true && b2==false)
+                    {
+                        i0 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                        i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                        i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    }
+
+                    //i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    //i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    //i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    /*
+                    i0 = 1;
+                    if (dist2<hist_max)
+                        i0 = 0;
+                    else 
+                        i0 = 1;
+                        */
+                    //i0 = int((dist0-hist_min)/bin_width) + 1;
+                    //nhistbins = nbins+2;
+                    //nhistbins2 = nhistbins*nhistbins;
+                    //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
+                    //i0 = 1;
+                    totbin = nhistbins2*i2 + nhistbins*i1 + i0;
+                    //totbin = 2047;
+
+                    //if(threadIdx.x==0 && blockIdx.x==0)
+                    //if(idx==0)
+                        //atomicExch(&dev_hist[0],i0);
+                        //atomicAdd(&dev_hist[totbin],1);
+                        //dev_hist[0]=totbin;
+                    //atomicAdd(&dev_hist[0],totbin);
+                    //atomicAdd(&dev_hist[totbin + (blockIdx.x*tot_hist_size)],1);
+                    //atomicAdd(&dev_hist[totbin],1);
+                    //atomicAdd(&dev_hist[0],1);
+                    atomicAdd(&shared_hist[totbin],1);
+                    //atomicAdd(&shared_hist[0],1);
+
+                }
             }
         }
     }
@@ -205,9 +285,8 @@ __global__ void distance(float x0, float y0, float z0, \
             //dev_hist[i+(blockIdx.x*tot_hist_size)]=1;
             //dev_hist[10]=1;
         }
-        dev_hist[4]=10000;
+        //dev_hist[4]=10000;
     }
-
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -242,6 +321,7 @@ int main(int argc, char **argv)
     float hist_bin_width = bin_width; // For now
     int flag = 0;
 
+    cudaError_t error = cudaGetLastError();
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -407,7 +487,7 @@ int main(int argc, char **argv)
             printf("\nDevice %d: \"%s\"\n", dev, deviceProp.name);
 
             printf("  Total amount of global memory:                 %.0f MBytes (%llu bytes)\n",
-                    (float)deviceProp.totalGlobalMem/1048576.0f, (unsigned long) deviceProp.totalGlobalMem);
+                    (float)deviceProp.totalGlobalMem/1048576.0f, (int) deviceProp.totalGlobalMem);
 
 
             printf("  Warp size:                                     %d\n", deviceProp.warpSize);
@@ -425,7 +505,7 @@ int main(int argc, char **argv)
             printf("\n*************\n");
 
             // check memory
-            if((unsigned long) deviceProp.totalGlobalMem < gpu_mem_needed) printf(" FAILURE: Not eneough memeory on device for this calculation! \n");
+            if((int) deviceProp.totalGlobalMem < gpu_mem_needed) printf(" FAILURE: Not eneough memeory on device for this calculation! \n");
             else
             {
                 printf("Hurrah! This device has enough memory to perform this calculation\n");
@@ -483,40 +563,10 @@ int main(int argc, char **argv)
             h_x[i][j] = temp0/scale_factor;
             h_y[i][j] = temp1/scale_factor;
             h_z[i][j] = temp2/scale_factor;
-            //if (j<10)
-            //printf("%e %e %e\n", h_x[i][j],h_y[i][j],h_z[i][j]);
+            if (j<10 || j>NUM_GALAXIES[i]-10)
+                printf("%e %e %e\n", h_x[i][j],h_y[i][j],h_z[i][j]);
         }
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // Allocation of histogram
-    ///////////////////////////////////////////////////////////////////////////
-    // FROM C CODE /////////
-    unsigned long *hist;
-    unsigned long *dev_hist;
-
-    ////////////////////////////////////////////////////////////////////////////
-    // This is the total number of bins/bytes we need for all of the 
-    // different histograms we'll be creating
-    ////////////////////////////////////////////////////////////////////////////
-    int tot_nbins = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
-    int size_hist = SUBMATRIX_SIZE*tot_nbins;
-    int size_hist_bytes = size_hist*sizeof(unsigned long);
-
-    printf("Size of histogram: %d bins\t%d bytes\n",size_hist,size_hist_bytes);
-
-    hist = (unsigned long*)malloc(size_hist_bytes);
-    memset(hist, 0, size_hist_bytes);
-
-    cudaMalloc((void **) &dev_hist, (size_hist_bytes));
-    cudaMemset(dev_hist, 0, size_hist_bytes);
-
-    unsigned long *summed_hist;
-
-    int summed_hist_size = tot_nbins * sizeof(unsigned long);
-    summed_hist =  (unsigned long*)malloc(summed_hist_size);
-    printf("Size of summed histogram array: %d bins\t%d bytes\n",(tot_nbins),summed_hist_size);
-    memset(summed_hist,0,summed_hist_size); 
 
     ////////////////////////////////////////////////////////////////////////////
     // Define the grid and block size
@@ -526,12 +576,57 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    grid.x = 4; // Is this the number of blocks?
-    block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
+    grid.x = 8; // Is this the number of blocks?
+    //block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
+    block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     // SUBMATRIX is the number of threads per warp? Per kernel call?
     printf("# of blocks per grid:  grid.x:  %d\n",grid.x);
     printf("# of thread per block: block.x: %d\n",block.x);
     ////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Allocation of histogram
+    ///////////////////////////////////////////////////////////////////////////
+    // FROM C CODE /////////
+    int *hist;
+    int *dev_hist;
+    printf("dev_hist: %x\n",dev_hist);
+
+    ////////////////////////////////////////////////////////////////////////////
+    // This is the total number of bins/bytes we need for all of the 
+    // different histograms we'll be creating
+    ////////////////////////////////////////////////////////////////////////////
+    int tot_nbins = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
+    //int size_hist = SUBMATRIX_SIZE*tot_nbins;
+    //int size_hist = 4*tot_nbins;
+    int size_hist = grid.x*tot_nbins;
+    //int size_hist = tot_nbins;
+    int size_hist_bytes = size_hist*sizeof(int);
+
+    printf("Size of histogram: %d bins\t%d bytes\n",size_hist,size_hist_bytes);
+
+    hist = (int*)malloc(size_hist_bytes);
+    memset(hist, 0, size_hist_bytes);
+
+    cudaMalloc((void **) &dev_hist, (size_hist_bytes));
+    error = cudaGetLastError();
+    printf("ERROR: %s\n", cudaGetErrorString(error) );
+
+    printf("dev_hist: %x\n",dev_hist);
+    cudaMemset(dev_hist, 0, size_hist_bytes);
+    error = cudaGetLastError();
+    printf("ERROR: %s\n", cudaGetErrorString(error) );
+
+    printf("dev_hist     : %x\n",&dev_hist[0]);
+    printf("dev_hist size: %d\n",size_hist_bytes);
+    printf("dev_hist end : %x\n",&dev_hist[size_hist-1]);
+
+    int *summed_hist;
+
+    int summed_hist_size = tot_nbins * sizeof(int);
+    summed_hist =  (int*)malloc(summed_hist_size);
+    printf("Size of summed histogram array: %d bins\t%d bytes\n",(tot_nbins),summed_hist_size);
+    memset(summed_hist,0,summed_hist_size); 
 
     // Check to see if we allocated enough memory.
     for (int i=0;i<3;i++)
@@ -586,15 +681,15 @@ int main(int argc, char **argv)
 
     int xind, yind, zind;
     int bin_index = 0;
-    //for(int i = 0; i < num_submatrices[0]; i++)
-    for(int i = 0; i < NUM_GALAXIES[0]; i++)
+    //for(int i = 0; i < NUM_GALAXIES[0]; i++)
+    for(int i = 0; i < num_submatrices[0]; i++)
     {
         if (i%100==0)
         {
             printf("%d\n",i);
             fflush(stdout);
         }
-        yind = i*SUBMATRIX_SIZE;
+        xind = i*SUBMATRIX_SIZE;
         int jmin = 0;
         if (which_three_input_files==0) // DDD or RRR
             jmin = 0;
@@ -606,18 +701,19 @@ int main(int argc, char **argv)
             jmin = 0;
         for(int j = jmin; j < num_submatrices[1]; j++)
         {
-            xind = j*SUBMATRIX_SIZE;
+            yind = j*SUBMATRIX_SIZE;
             int kmin = 0;
             if (which_three_input_files==0)
-                kmin = j;
+                kmin = 0;
             else if (which_three_input_files==1)
-                kmin = j;
+                kmin = 0;
             else if (which_three_input_files==2)
-                kmin = i;
+                kmin = 0;
             else if (which_three_input_files==3)
                 kmin = 0;
             for(int k =kmin; k < num_submatrices[2]; k++)
             {
+                zind = k*SUBMATRIX_SIZE;
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
@@ -625,21 +721,28 @@ int main(int argc, char **argv)
                     // Set the histogram to all zeros each time.
                     cudaMemset(dev_hist,0,size_hist_bytes);
 
-                    int max_x = NUM_GALAXIES[1];
-                    int max_y = NUM_GALAXIES[2];
+                    int max_x = NUM_GALAXIES[0];
+                    int max_y = NUM_GALAXIES[1];
+                    int max_z = NUM_GALAXIES[2];
 
                     //printf("here\n");
                     //printf("i: %d\n",i);
-                    //printf("xind: %d\n",xind);
-                    //printf("yind: %d\n",yind);
-                    //printf("max_x: %d\n",max_x);
-                    //printf("max_y: %d\n",max_y);
-                    distance<<<grid,block>>>(h_x[0][i],h_y[0][i],h_z[0][i], \
-                            d_x[1],d_y[1],d_z[1],\
-                            d_x[2],d_y[2],d_z[2],\
-                            xind, yind, max_x, max_y, \
-                            dev_hist, hist_lower_range, hist_upper_range, nbins, hist_bin_width, log_binning_flag, conv_factor_angle);
+                    printf("xind: %d\n",xind);
+                    printf("yind: %d\n",yind);
+                    printf("zind: %d\n",zind);
+                    printf("max_x: %d\n",max_x);
+                    printf("max_y: %d\n",max_y);
+                    printf("max_z: %d\n",max_z);
+                    printf("nbins: %d\n",nbins);
+                    distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], \
+                                             d_x[1],d_y[1],d_z[1],\
+                                             d_x[2],d_y[2],d_z[2],\
+                                             xind, yind, zind, \
+                                             max_x, max_y, max_z,\
+                                             dev_hist, hist_lower_range, hist_upper_range, nbins, \
+                                             hist_bin_width, log_binning_flag, conv_factor_angle);
                     //printf("there\n");
+                    printf("dev_hist: %x\n",dev_hist);
 
                     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
@@ -654,7 +757,7 @@ int main(int argc, char **argv)
                         bin_index = m%(tot_nbins);
                         //if (hist[m]!=0)
                         //{
-                            //printf("%d %ul\n",m,hist[m]);
+                        //printf("%d %ul\n",m,hist[m]);
                         //}
                         summed_hist[bin_index] += hist[m];
                     }    
@@ -665,12 +768,12 @@ int main(int argc, char **argv)
 
     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
-    unsigned long total = 0;
+    int total = 0;
     int index = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
     for(int i = 0; i < nbins+2; i++)
     {
-        printf("%d --------------\n",i);
+        //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
         for(int j = 0; j < nbins+2; j++)
         {
@@ -678,12 +781,12 @@ int main(int argc, char **argv)
             {
 
                 index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i;
-                printf("%ul ",summed_hist[index]);
+                //printf("%ul ",summed_hist[index]);
                 fprintf(outfile,"%ul ",summed_hist[index]);
                 total += summed_hist[index];
             }
             fprintf(outfile,"\n");
-            printf("\n");
+            //printf("\n");
         }
     }
 

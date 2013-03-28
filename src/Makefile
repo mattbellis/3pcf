@@ -54,7 +54,7 @@ all: 3pcf_Bellis 3pcf_C_version
 
 $(OBJ_DIR)/3pcf_Bellis.cu_o : 3pcf_Bellis.cu
 	mkdir -p $(OBJ_DIR)
-	$(NVCC) -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis.cu_o $<
+	$(NVCC) -g -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis.cu_o $<
 
 3pcf_C_version : 3pcf_C_version.cc
 	mkdir -p $(INSTALL_DIR)

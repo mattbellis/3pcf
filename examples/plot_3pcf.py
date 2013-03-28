@@ -7,10 +7,15 @@ import sys
 # Open the input file
 ################################################################################
 infilename = []
-infilename.append('DDD_evenbinning_CPU_10k.dat')
-infilename.append('DDR_evenbinning_CPU_10k.dat')
-infilename.append('DRR_evenbinning_CPU_10k.dat')
-infilename.append('RRR_evenbinning_CPU_10k.dat')
+#infilename.append('DDD_evenbinning_CPU_10k.dat')
+#infilename.append('DDR_evenbinning_CPU_10k.dat')
+#infilename.append('DRR_evenbinning_CPU_10k.dat')
+#infilename.append('RRR_evenbinning_CPU_10k.dat')
+
+infilename.append('DDD_evenbinning_CPU_128bins_10k.dat')
+infilename.append('DDR_evenbinning_CPU_128bins_10k.dat')
+infilename.append('DRR_evenbinning_CPU_128bins_10k.dat')
+infilename.append('RRR_evenbinning_CPU_128bins_10k.dat')
 
 ddd = None
 ddr = None
