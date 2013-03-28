@@ -9,6 +9,7 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 2048
 //#define SUBMATRIX_SIZE 1024
 #define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
@@ -23,6 +24,7 @@ using namespace std;
 //#define DEFAULT_NBINS 254 
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
+//#define DEFAULT_NBINS 30 
 #define DEFAULT_NBINS 14 
 //#define DEFAULT_NBINS 6 
 
@@ -63,7 +65,8 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 // Kernel to calculate angular distances between galaxies and histogram
 // the distances.
 ////////////////////////////////////////////////////////////////////////
-__global__ void distance(float *x0, float *y0, float *z0, \
+//__global__ void distance(float *x0, float *y0, float *z0, 
+__global__ void distance(
         float *x1, float *y1, float *z1, \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
@@ -104,7 +107,7 @@ __global__ void distance(float *x0, float *y0, float *z0, \
     int j=0;
     int k=0;
 
-    bool do_calc = 1;
+    //bool do_calc = 1;
 
     int ymax = yind + SUBMATRIX_SIZE;
     int zmax = zind + SUBMATRIX_SIZE;
@@ -131,9 +134,9 @@ __global__ void distance(float *x0, float *y0, float *z0, \
     //if (idx<100)
     if (idx<max_xind)
     {
-        x0i = x0[idx];
-        y0i = y0[idx];
-        z0i = z0[idx];
+        //x0i = x0[idx];
+        //y0i = y0[idx];
+        //z0i = z0[idx];
         //x0i = x0[0];
         //y0i = y0[0];
         //z0i = z0[0];
@@ -165,7 +168,7 @@ __global__ void distance(float *x0, float *y0, float *z0, \
                 //do_calc=0;
                 //}
                 //if(idx > i) ///////// CHECK THIS
-                if (do_calc)
+                //if (do_calc)
                 {
                     xdiff = x1[idx]-x1[j];
                     ydiff = y1[idx]-y1[j];
@@ -176,9 +179,9 @@ __global__ void distance(float *x0, float *y0, float *z0, \
                     //xdiff = x0i;
                     //ydiff = y0i;
                     //zdiff = z0[0];
-                    dist0 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
                     //dist0 = 2.0*zdiff;
-                    //dist0 = sqrt(10.0);
+                    //dist0 = sqrtf(10.0);
                     //dist0 = 100.0;
 
                     xdiff = x1[idx]-x2[k];
@@ -187,13 +190,13 @@ __global__ void distance(float *x0, float *y0, float *z0, \
                     //xdiff = x0i-x2[k];
                     //ydiff = y0i-y2[k];
                     //zdiff = z0i-z2[k];
-                    dist1 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
                     //dist1 = 100.0;
 
                     xdiff = x1[j]-x2[k];
                     ydiff = y1[j]-y2[k];
                     zdiff = z1[j]-z2[k];
-                    dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    dist2 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
                     b0 = dist0<dist1;
                     b1 = dist1<dist2;
@@ -203,6 +206,7 @@ __global__ void distance(float *x0, float *y0, float *z0, \
                     i1=0; // middlest
                     i2=0; // longest
 
+                    /*
                     if (b0==true && b1==true)
                     {
                         i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
@@ -239,10 +243,11 @@ __global__ void distance(float *x0, float *y0, float *z0, \
                         i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
                         i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
                     }
+                    */
 
-                    //i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
-                    //i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
-                    //i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+                    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+                    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+                    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
                     /*
                     i0 = 1;
                     if (dist2<hist_max)
@@ -563,8 +568,8 @@ int main(int argc, char **argv)
             h_x[i][j] = temp0/scale_factor;
             h_y[i][j] = temp1/scale_factor;
             h_z[i][j] = temp2/scale_factor;
-            if (j<10 || j>NUM_GALAXIES[i]-10)
-                printf("%e %e %e\n", h_x[i][j],h_y[i][j],h_z[i][j]);
+            //if (j<10 || j>NUM_GALAXIES[i]-10)
+                //printf("%e %e %e\n", h_x[i][j],h_y[i][j],h_z[i][j]);
         }
     }
 
@@ -576,9 +581,9 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    grid.x = 8; // Is this the number of blocks?
-    //block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
-    block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
+    grid.x = 4; // Is this the number of blocks?
+    block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
+    //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     // SUBMATRIX is the number of threads per warp? Per kernel call?
     printf("# of blocks per grid:  grid.x:  %d\n",grid.x);
     printf("# of thread per block: block.x: %d\n",block.x);
@@ -734,7 +739,8 @@ int main(int argc, char **argv)
                     printf("max_y: %d\n",max_y);
                     printf("max_z: %d\n",max_z);
                     printf("nbins: %d\n",nbins);
-                    distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], \
+                    //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
+                    distance<<<grid,block>>>(
                                              d_x[1],d_y[1],d_z[1],\
                                              d_x[2],d_y[2],d_z[2],\
                                              xind, yind, zind, \
