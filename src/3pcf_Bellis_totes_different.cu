@@ -489,7 +489,8 @@ int main(int argc, char **argv)
         //num_submatrices[i] = NUM_GALAXIES[i]/SUBMATRIX_SIZE;
         num_submatrices[i] = NUM_GALAXIES[i]/(block.x*grid.x);
         // Take care of edges of matrix.
-        if (NUM_GALAXIES[i]%SUBMATRIX_SIZE != 0)
+        //if (NUM_GALAXIES[i]%SUBMATRIX_SIZE != 0)
+        if (NUM_GALAXIES[i]%(block.x*grid.x) != 0)
         {
             num_submatrices[i] += 1;
         }
@@ -511,7 +512,8 @@ int main(int argc, char **argv)
             printf("%d\n",i);
             fflush(stdout);
         }
-        xind = i*SUBMATRIX_SIZE;
+        //xind = i*SUBMATRIX_SIZE;
+        xind = i*(block.x*grid.x);
         int jmin = 0;
         if (which_three_input_files==0) // DDD or RRR
             jmin = 0;
@@ -523,7 +525,8 @@ int main(int argc, char **argv)
             jmin = 0;
         for(int j = jmin; j < num_submatrices[1]; j++)
         {
-            yind = j*SUBMATRIX_SIZE;
+            //yind = j*SUBMATRIX_SIZE;
+            yind = j*(block.x*grid.x);
             int kmin = 0;
             if (which_three_input_files==0)
                 kmin = 0;
@@ -535,7 +538,8 @@ int main(int argc, char **argv)
                 kmin = 0;
             for(int k =kmin; k < num_submatrices[2]; k++)
             {
-                zind = k*SUBMATRIX_SIZE;
+                //zind = k*SUBMATRIX_SIZE;
+                zind = k*(block.x*grid.x);
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
@@ -547,9 +551,9 @@ int main(int argc, char **argv)
                     int max_y = NUM_GALAXIES[1];
                     int max_z = NUM_GALAXIES[2];
 
-                    //printf("xind: %5d %5d\n",xind,max_x);
-                    //printf("yind: %5d %5d\n",yind,max_y);
-                    //printf("zind: %5d %5d\n",zind,max_z);
+                    printf("xind: %5d %5d\n",xind,max_x);
+                    printf("yind: %5d %5d\n",yind,max_y);
+                    printf("zind: %5d %5d\n",zind,max_z);
                     //printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
