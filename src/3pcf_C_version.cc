@@ -9,7 +9,8 @@ using namespace std;
 #define HIST_MIN 0.0 // for degrees
 #define HIST_MAX 100.0 // for degrees
 
-#define DEFAULT_NBINS 20 // for log binning
+//#define DEFAULT_NBINS 20 // for log binning
+#define DEFAULT_NBINS 64 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
