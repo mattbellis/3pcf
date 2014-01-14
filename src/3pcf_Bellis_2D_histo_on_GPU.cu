@@ -14,8 +14,9 @@ using namespace std;
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
+#define SUBMATRIX_SIZE 64
 //#define SUBMATRIX_SIZE 16
-#define SUBMATRIX_SIZE 8
+//#define SUBMATRIX_SIZE 8
 
 ////////////////////////////////////////////////////////////////////////
 // Number of histogram bins has to be edited by hand, prior to
@@ -75,7 +76,8 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
-        float *x1, float *y1, float *z1, \
+        float x_pivot, float y_pivot, float z_pivot,  \
+        float *x1, float *y1, float *z1,  \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
         int max_xind, int max_yind, int max_zind, \
@@ -85,12 +87,12 @@ __global__ void distance(
 {
 
     ////////////////////////////////////////////////////////////////////////////
-    // Idx will keep track of which thread is being calculated within a given 
+    // Idx will keep track of which thread is being calculated within a given
     // warp.
     ////////////////////////////////////////////////////////////////////////////
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
-    int idy = blockIdx.y * blockDim.y + threadIdx.y; // This should range to SUBMATRIX_SIZE
-    int idz = blockIdx.z * blockDim.z + threadIdx.z; // This should range to SUBMATRIX_SIZE
+
+    idx += xind;
 
     //int tot_hist_size = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
     //int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
@@ -104,10 +106,10 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////
     //__shared__ int shared_hist[(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)];
     //__shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
-    __shared__ int shared_hist[SUBMATRIX_SIZE*SUBMATRIX_SIZE*SUBMATRIX_SIZE];
+    __shared__ int shared_hist[SUBMATRIX_SIZE*SUBMATRIX_SIZE];
     // Note that we only clear things out for the first thread on each block.
-    int hbins = SUBMATRIX_SIZE*SUBMATRIX_SIZE*SUBMATRIX_SIZE;
-    if(threadIdx.x==0 && threadIdx.y==0 && threadIdx.z==0)
+    int hbins = SUBMATRIX_SIZE*SUBMATRIX_SIZE;
+    if(threadIdx.x==0)
     {
         for (int i=0;i<hbins;i++)
             shared_hist[i] = 0;
@@ -129,7 +131,6 @@ __global__ void distance(
     int zmax = zind + SUBMATRIX_SIZE;
 
     ymax = (ymax>max_yind ? max_yind : ymax);
-    zmax = (zmax>max_zind ? max_zind : zmax);
 
     int b0 = false;
     int b1 = false;
@@ -306,7 +307,7 @@ int main(int argc, char **argv)
         printf("Output filename is %s\n", outfilename);
     }
 
-    float *h_x[3], *h_y[3], *h_z[3];
+    float *h_x[3], *h_y[3], *d_z[3];
     float *d_x[3], *d_y[3], *d_z[3];
 
     // Open the input files and the output file.
@@ -395,12 +396,10 @@ int main(int argc, char **argv)
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
     grid.x = 64; // Is this the number of blocks?
-    grid.y = 64; // Is this the number of blocks?
-    grid.z = 64; // Is this the number of blocks?
+    //grid.y = 64; // Is this the number of blocks?
     //block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? 
     block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? 
-    block.y = SUBMATRIX_SIZE; // Is this the number of threads per block? 
-    block.z = SUBMATRIX_SIZE; // Is this the number of threads per block? 
+    //block.y = SUBMATRIX_SIZE; // Is this the number of threads per block? 
     // SUBMATRIX is the number of threads per warp? Per kernel call?
     printf("# of blocks per grid:  grid.x:  %d\n",grid.x);
     printf("# of thread per block: block.x: %d\n",block.x);
@@ -458,7 +457,7 @@ int main(int argc, char **argv)
     {
         cudaMalloc((void **) &d_x[i], size_of_galaxy_array[i] );
         cudaMalloc((void **) &d_y[i], size_of_galaxy_array[i] );
-        cudaMalloc((void **) &d_z[i], size_of_galaxy_array[i] );
+        cudaMalloc((void **) &d_y[i], size_of_galaxy_array[i] );
 
         //printf("Size: %d\n",size_of_galaxy_array[i]);
         if (0==d_x[i] || 0==d_y[i] || 0==d_z[i])
@@ -562,8 +561,9 @@ int main(int argc, char **argv)
                     //printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
-                            d_x[1],d_y[1],d_z[1],\
-                            d_x[2],d_y[2],d_z[2],\
+                            x_pivot, y_pivot, z_pivot,
+                            d_x[1],d_y[1], d_z[1],\
+                            d_x[2],d_y[2], d_z[2],\
                             xind, yind, zind, \
                             max_x, max_y, max_z,\
                             dev_hist, hist_lower_range, hist_upper_range, nbins, \
