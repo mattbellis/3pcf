@@ -137,8 +137,8 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
-        float x_pivot0, float y_pivot0, float z_pivot0,  \
-        float x_pivot1, float y_pivot1, float z_pivot1,  \
+        float *x_pivot0, float *y_pivot0, float *z_pivot0,  \
+        float *x_pivot1, float *y_pivot1, float *z_pivot1,  \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
         int max_xind, int max_yind, int max_zind, \
@@ -577,7 +577,7 @@ int main(int argc, char **argv)
             for(int k =kmin; k < num_submatrices[2]; k++)
             {
                 //zind = k*SUBMATRIX_SIZE;
-                zind = k*(block.x*grid.x);
+                zind = k*block.x;
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
@@ -594,10 +594,10 @@ int main(int argc, char **argv)
                     //printf("%f %f %f\n",h_x[0][i],h_y[0][i],h_z[0][i]);
                     //printf("%f %f %f\n",h_x[0][j],h_y[0][j],h_z[0][j]);
                        distance<<<grid,block>>>(
-                       d_x[0][i],d_y[0][i],d_z[0][i],\
-                       d_x[1][j],d_y[1][j],d_z[1][j],\
+                       d_x[0],d_y[0],d_z[0],\
+                       d_x[1],d_y[1],d_z[1],\
                        d_x[2],d_y[2],d_z[2],\
-                       xind, yind, zind, \
+                       i, j, zind, \
                        max_x, max_y, max_z,\
                        dev_hist, hist_lower_range, hist_upper_range, \
                        hist_bin_width, log_binning_flag, conv_factor_angle);
