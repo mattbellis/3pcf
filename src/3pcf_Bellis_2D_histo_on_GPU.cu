@@ -29,8 +29,8 @@ using namespace std;
 //#define NUM_BINS 126 
 //#define NUM_BINS 62 
 //#define NUM_BINS 30 
-#define NUM_BINS 32 
-//#define NUM_BINS 16 // This will be squared eventually.
+//#define NUM_BINS 32 
+#define NUM_BINS 16 // This will be squared eventually.
 //#define NUM_BINS 14 
 //#define NUM_BINS 6 
 
