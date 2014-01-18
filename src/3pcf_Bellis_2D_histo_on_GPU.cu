@@ -10,8 +10,8 @@ using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
 //#define SUBMATRIX_SIZE 2048
-//#define SUBMATRIX_SIZE 1024
-#define SUBMATRIX_SIZE 512
+#define SUBMATRIX_SIZE 1024
+//#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
 //#define SUBMATRIX_SIZE 64
@@ -30,7 +30,7 @@ using namespace std;
 //#define NUM_BINS 62 
 //#define NUM_BINS 30 
 //#define NUM_BINS 64 
-#define NUM_BINS 64 // This will be squared eventually.
+#define NUM_BINS 16 // This will be squared eventually.
 //#define NUM_BINS 14 
 //#define NUM_BINS 6 
 
@@ -85,14 +85,14 @@ __global__ void diagnostic_kernel (int *dev_hist)
     __syncthreads();
 
     /*
-    if(threadIdx.x==0)
-    {
-        for(int i=0;i<NUM_BINS;i++)
-        {
-            dev_hist[i+(blockIdx.x*(NUM_BINS))]=shared_hist[i];
-        }
-    }
-    */
+       if(threadIdx.x==0)
+       {
+       for(int i=0;i<NUM_BINS;i++)
+       {
+       dev_hist[i+(blockIdx.x*(NUM_BINS))]=shared_hist[i];
+       }
+       }
+     */
 
 }
 
@@ -104,7 +104,8 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
     //int bin_index = -1;
     int bin_index = 1;
 
-    bin_index = floor((dist-hist_min)/bin_width) + 1;
+    //bin_index = floor((dist-hist_min)/bin_width) + 1;
+    bin_index = floor((dist-hist_min)/bin_width);
     /*
        if(dist < hist_min)
        bin_index = 0;
@@ -137,12 +138,12 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
-        float *x_pivot0, float *y_pivot0, float *z_pivot0,  \
-        float *x_pivot1, float *y_pivot1, float *z_pivot1,  \
+        float *x0, float *y0, float *z0,  \
+        float *x1, float *y1, float *z1,  \
         float *x2, float *y2, float *z2, \
-        int xind, int yind, int zind, \
-        int max_xind, int max_yind, int max_zind, \
-        int *dev_hist, float hist_min, float hist_max, \
+        int aind, int bind, int cind, \
+        int max_aind, int max_bind, int max_cind, \
+        volatile int *dev_hist, float hist_min, float hist_max, \
         float bin_width, int flag=0,  float conv_factor_angle=57.2957795)
 //__global__ void distance(float x0)
 {
@@ -154,90 +155,118 @@ __global__ void distance(
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
     int tidx = threadIdx.x; // This just runs over the number of threads in a block.
 
-    //idx += xind;
-    //tidx += xind; // Increment by where we are in the big calculation.
+    //idx += aind;
+    tidx += cind; // Increment by where we are in the big calculation.
 
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    //__shared__ int shared_hist[NUM_BINS*NUM_BINS+1];
+    __shared__ int shared_hist[NUM_BINS*NUM_BINS+1];
     // Note that we only clear things out for the first thread on each block.
-    //int hbins = NUM_BINS*NUM_BINS+1;
-    //if(threadIdx.x==0)
-    //{
-    //for (int i=0;i<hbins;i++)
-    //shared_hist[i] = 0;
-    //}
-    //__syncthreads();
+    int hbins = (NUM_BINS*NUM_BINS)+1;
+    if(threadIdx.x==0)
+    {
+        for (int i=0;i<hbins;i++)
+            shared_hist[i] = 0;
+    }
+    __syncthreads();
     ////////////////////////////////////////////////////////////////////////
-    /*
 
-       int i=0;
-       int j=0;
-       int k=0;
+    int i=0;
+    int j=0;
+    int k=0;
 
-       int i0=0; // shortest
-       int i1=0; // middle
-       int i2=0; // longest
+    int i0=0; // shortest
+    int i1=0; // middle
+    int i2=0; // longest
 
-       float xdiff = 0.0;
-       float ydiff = 0.0;
-       float zdiff = 0.0;
-       float dist0 = 0.0;
-       float dist1 = 0.0;
-       float dist2 = 0.0;
+    float xdiff = 0.0;
+    float ydiff = 0.0;
+    float zdiff = 0.0;
+    float dist0 = 0.0;
+    float dist1 = 0.0;
+    float dist2 = 0.0;
 
-       int totbin = 0;
+    int totbin = 0;
 
-       xdiff = x_pivot0-x_pivot1;
-       ydiff = y_pivot0-y_pivot1;
-       zdiff = z_pivot0-z_pivot1;
-       dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+    if (tidx<max_cind)
+    {
+        float x_pivot0 = x0[aind];
+        float y_pivot0 = y0[aind];
+        float z_pivot0 = z0[aind];
 
-       xdiff = x_pivot0-x2[idx];
-       ydiff = y_pivot0-y2[idx];
-       zdiff = z_pivot0-z2[idx];
-       dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+        float x_pivot1 = x1[bind];
+        float y_pivot1 = y1[bind];
+        float z_pivot1 = z1[bind];
 
-       xdiff = x_pivot0-x2[idx];
-       ydiff = y_pivot0-y2[idx];
-       zdiff = z_pivot0-z2[idx];
-       dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+        xdiff = x_pivot0-x_pivot1;
+        ydiff = y_pivot0-y_pivot1;
+        zdiff = z_pivot0-z_pivot1;
+        dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    //totbin = 0;
+        xdiff = x_pivot0-x2[tidx];
+        ydiff = y_pivot0-y2[tidx];
+        zdiff = z_pivot0-z2[tidx];
+        dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    i0 = distance_to_bin(dist0,hist_min,hist_max,NUM_BINS,bin_width,flag);
-    i1 = distance_to_bin(dist1,hist_min,hist_max,NUM_BINS,bin_width,flag);
-    i2 = distance_to_bin(dist2,hist_min,hist_max,NUM_BINS,bin_width,flag);
+        xdiff = x_pivot1-x2[tidx];
+        ydiff = y_pivot1-y2[tidx];
+        zdiff = z_pivot1-z2[tidx];
+        dist2 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
-    totbin = NUM_BINS*i1 + i2;
+        //totbin = 0;
 
-    shared_hist[0] = i0;
+        i0 = distance_to_bin(dist0,hist_min,hist_max,NUM_BINS,bin_width,flag);
+        i1 = distance_to_bin(dist1,hist_min,hist_max,NUM_BINS,bin_width,flag);
+        i2 = distance_to_bin(dist2,hist_min,hist_max,NUM_BINS,bin_width,flag);
 
-    // THIS SEEMS TO WORK HERE!!!!!!
-    //if (j>idx+1 && k>j+1 && idx<max_xind)
-    //{
-    //int temp = shared_hist[totbin]|1;
-    //shared_hist[k] = totbin;
-    //shared_hist[threadIdx.x + 8*threadIdx.y + 64*threadIdx.z] = totbin;
-    if (totbin<hbins-1)
-    atomicAdd(&shared_hist[totbin+1],1);
+        //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
+        totbin = NUM_BINS*i1 + i2;
+
+        //shared_hist[0] = 10;
+
+        // THIS SEEMS TO WORK HERE!!!!!!
+        //if (j>idx+1 && k>j+1 && idx<max_aind)
+        //{
+        //int temp = shared_hist[totbin]|1;
+        //shared_hist[k] = totbin;
+        //shared_hist[threadIdx.x + 8*threadIdx.y + 64*threadIdx.z] = totbin;
+
+        if (totbin<NUM_BINS*NUM_BINS)
+            atomicAdd(&shared_hist[totbin+1],1);
+
+        //if (tidx<NUM_BINS*NUM_BINS)
+            //atomicAdd(&shared_hist[tidx],totbin);
+
+        //totbin = tidx%(NUM_BINS*NUM_BINS+1);
+        //shared_hist[totbin] = tidx;
+        //shared_hist[1] = 10;
+
+    }
+
     //}
 
     __syncthreads();
 
 
     // This works if we only have one block.
+    ///*
     if(threadIdx.x==0)
     {
-    //for(int i=0;i<tot_hist_size;i++)
-    for(int i=0;i<hbins;i++)
-    {
-    dev_hist[i] = shared_hist[i];
+        shared_hist[0] = i0;
+        //shared_hist[0] = 0;
+        //for(i=0;i<1;i++)
+        for(i=0;i<hbins;i++)
+        {
+            dev_hist[i] = shared_hist[i];
+            //if (i>0)
+                //dev_hist[i] = (int)(dist2);
+            //dev_hist[0] = shared_hist[0];
+            //j = shared_hist[i];
+            //dev_hist[i] = 20;
+        }
     }
-    }
-     */
+    //*/
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -269,6 +298,9 @@ int main(int argc, char **argv)
     float bin_width = (hist_max-hist_min)/NUM_BINS;
     float hist_bin_width = bin_width; // For now
     int flag = 0;
+
+    printf("bin_width: %f\n",bin_width);
+    //exit(0);
 
     float hist_lower_range = 0.0;
     float hist_upper_range = hist_max;
@@ -442,7 +474,7 @@ int main(int argc, char **argv)
     // different histograms we'll be creating
     ////////////////////////////////////////////////////////////////////////////
     int tot_nbins = (NUM_BINS)*(NUM_BINS)*(NUM_BINS);
-    int tot_nbins_on_gpu = (NUM_BINS)*(NUM_BINS)+1; // This will be a 2D hist
+    int tot_nbins_on_gpu = (NUM_BINS*NUM_BINS)+1; // This will be a 2D hist
 
     int size_hist = grid.x*tot_nbins;
     int size_hist_bytes = size_hist*sizeof(int);
@@ -453,8 +485,8 @@ int main(int argc, char **argv)
     printf("Size of histogram: %d bins\t%d bytes\n",size_hist,size_hist_bytes);
     printf("Size of histogram on GPU: %d bins\t%d bytes\n",size_hist_on_gpu,size_hist_bytes_on_gpu);
 
-    hist = (int*)malloc(size_hist_bytes);
-    memset(hist, 0, size_hist_bytes);
+    hist = (int*)malloc(size_hist_bytes_on_gpu);
+    memset(hist, 0, size_hist_bytes_on_gpu);
 
     cudaMalloc((void **) &dev_hist, (size_hist_bytes_on_gpu));
     error = cudaGetLastError();
@@ -532,20 +564,21 @@ int main(int argc, char **argv)
     printf("Number of submatrices: %dx%dx%d\n",num_submatrices[0],num_submatrices[1],num_submatrices[2]);
     printf("Number of calculations per submatrices: %dx%d\n",SUBMATRIX_SIZE,SUBMATRIX_SIZE);
 
-    int xind, yind, zind;
+    int aind, bind, cind;
     int bin_index = 0;
     unsigned long tot0 = 0;
     //for(int i = 0; i < num_submatrices[0]; i++)
-    for(int i = 0; i < NUM_GALAXIES[0]; i++)
+    //for(int i = 0; i < NUM_GALAXIES[0]; i++)
+    for(int i=0;i<NUM_GALAXIES[0];i++)
     {
         if (i%100==0)
         {
             printf("%d\n",i);
             fflush(stdout);
         }
-        //xind = i*SUBMATRIX_SIZE;
-        //xind = i*(block.x*grid.x);
-        xind = i;
+        //aind = i*SUBMATRIX_SIZE;
+        //aind = i*(block.x*grid.x);
+        aind = i;
         int jmin = 0;
         if (which_three_input_files==0) // DDD or RRR
             jmin = 0;
@@ -557,12 +590,12 @@ int main(int argc, char **argv)
             jmin = 0;
         //for(int j = jmin; j < num_submatrices[1]; j++)
         int max_x = NUM_GALAXIES[0];
-        printf("xind: %5d %5d\n",xind,max_x);
+        printf("aind: %5d %5d\n",aind,max_x);
         for(int j = jmin; j < NUM_GALAXIES[1]; j++)
         {
-            //yind = j*SUBMATRIX_SIZE;
-            yind = j;
-            //yind = j*(block.x*grid.x);
+            //bind = j*SUBMATRIX_SIZE;
+            bind = j;
+            //bind = j*(block.x*grid.x);
             int kmin = 0;
             if (which_three_input_files==0)
                 kmin = 0;
@@ -573,11 +606,11 @@ int main(int argc, char **argv)
             else if (which_three_input_files==3)
                 kmin = 0;
             int max_y = NUM_GALAXIES[1];
-            //printf("yind: %5d %5d\n",yind,max_y);
+            //printf("bind: %5d %5d\n",bind,max_y);
             for(int k =kmin; k < num_submatrices[2]; k++)
             {
-                //zind = k*SUBMATRIX_SIZE;
-                zind = k*block.x;
+                //cind = k*SUBMATRIX_SIZE;
+                cind = k*block.x;
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
@@ -588,19 +621,19 @@ int main(int argc, char **argv)
 
                     int max_z = NUM_GALAXIES[2];
 
-                    //printf("zind: %5d %5d\n",zind,max_z);
+                    //printf("cind: %5d %5d\n",cind,max_z);
                     //printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     //printf("%f %f %f\n",h_x[0][i],h_y[0][i],h_z[0][i]);
                     //printf("%f %f %f\n",h_x[0][j],h_y[0][j],h_z[0][j]);
-                       distance<<<grid,block>>>(
-                       d_x[0],d_y[0],d_z[0],\
-                       d_x[1],d_y[1],d_z[1],\
-                       d_x[2],d_y[2],d_z[2],\
-                       i, j, zind, \
-                       max_x, max_y, max_z,\
-                       dev_hist, hist_lower_range, hist_upper_range, \
-                       hist_bin_width, log_binning_flag, conv_factor_angle);
+                    distance<<<grid,block>>>(
+                            d_x[0],d_y[0],d_z[0],\
+                            d_x[1],d_y[1],d_z[1],\
+                            d_x[2],d_y[2],d_z[2],\
+                            aind, bind, cind, \
+                            max_x, max_y, max_z,\
+                            dev_hist, hist_lower_range, hist_upper_range, \
+                            hist_bin_width, log_binning_flag, conv_factor_angle);
                     //diagnostic_kernel<<<grid,block>>>(dev_hist);
 
                     checkCUDAError("kernel");
@@ -614,11 +647,18 @@ int main(int argc, char **argv)
                     // Sum up the histograms from each thread (hist).
                     ////////////////////////////////////////////////////////////////////
                     {
+                        //printf("Third verse same as the first: %d %d %d %d\n",hist[0],aind,bind,cind);
+                        //printf("%f %f %f\n",h_x[0][i],h_y[0][i],h_z[0][i]);
+                        //printf("%f %f %f\n",h_x[1][j],h_y[1][j],h_z[1][j]);
                         for(int m=1; m<NBINS2p1; m++)
                         {
-                            //bin_index = hist[0]*NBINS2 + m;
-                            //summed_hist[bin_index] += hist[m];
-                            //tot0 += hist[m];
+                            if (hist[0]>=0 && hist[0]<NUM_BINS)
+                            {
+                                bin_index = hist[0]*NBINS2 + m - 1;
+                                //printf("bin_index: %d %d\n: ",bin_index,hist[m]);
+                                summed_hist[bin_index] += hist[m];
+                                tot0 += hist[m];
+                            }
                         }    
                     }    
                 }
@@ -635,9 +675,9 @@ int main(int argc, char **argv)
     {
         //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
-        for(int j = i; j < NUM_BINS; j++)
+        for(int j = 0; j < NUM_BINS; j++)
         {
-            for(int k = j; k < NUM_BINS; k++)
+            for(int k = 0; k < NUM_BINS; k++)
             {
                 index = i*NUM_BINS*NUM_BINS + j*NUM_BINS + k;
                 //printf("%ul ",summed_hist[index]);

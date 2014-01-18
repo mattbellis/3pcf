@@ -10,7 +10,8 @@ using namespace std;
 #define HIST_MAX 100.0 // for degrees
 
 //#define DEFAULT_NBINS 20 // for log binning
-#define DEFAULT_NBINS 64 // for log binning
+//#define DEFAULT_NBINS 64 // for log binning
+#define DEFAULT_NBINS 16 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
@@ -31,7 +32,8 @@ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float
         if (flag==0)
         {
             //printf("%f %f %f\n",dist,hist_min,bin_width);
-            bin_index = int((dist-hist_min)/bin_width) + 1;
+            //bin_index = int((dist-hist_min)/bin_width) + 1;
+            bin_index = int((dist-hist_min)/bin_width);
             //printf("here! %d\n",bin_index);
         }
         else if (flag==1)// log binning
@@ -85,6 +87,11 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     int i1=-1; // middle
     int i2=-1; // longest
 
+    i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
+    i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
+    i2 = distance_to_bin(dist2,hist_min,hist_max,nbins,bin_width,flag);
+
+    /*
     if (b0==true && b1==true)
     {
         i0 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
@@ -121,11 +128,12 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         i1 = distance_to_bin(dist1,hist_min,hist_max,nbins,bin_width,flag);
         i2 = distance_to_bin(dist0,hist_min,hist_max,nbins,bin_width,flag);
     }
+    */
     
     //printf("%d %d %d\n",i0,i1,i2);
 
     // Combine for big 1d rep of 3d histogram;
-    int nhistbins = nbins+2;
+    int nhistbins = nbins;
     int nhistbins2 = nhistbins*nhistbins;
     int totbin = nhistbins2*i2 + nhistbins*i1 + i0;
 
@@ -326,7 +334,7 @@ int main(int argc, char **argv)
     //int nbins;
     int log_binning=flag;
 
-    int size_hist = (nbins+2)*(nbins+2)*(nbins+2);
+    int size_hist = (nbins)*(nbins)*(nbins);
     int size_hist_bytes = size_hist*sizeof(unsigned long long);
 
     hist = (unsigned long long*)malloc(size_hist_bytes);
@@ -352,7 +360,8 @@ int main(int argc, char **argv)
             jmin = 0;
         else if (which_three_input_files==3) // DDR or RRD
             jmin = i+1;
-        for(int j = jmin; j < NUM_GALAXIES[1]; j++)
+        //for(int j = jmin; j < NUM_GALAXIES[1]; j++)
+        for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
             int kmin = 0;
             if (which_three_input_files==0)
@@ -363,7 +372,8 @@ int main(int argc, char **argv)
                 kmin = i+1;
             else if (which_three_input_files==3)
                 kmin = 0;
-            for(int k =kmin; k < NUM_GALAXIES[2]; k++)
+            //for(int k =kmin; k < NUM_GALAXIES[2]; k++)
+            for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
                 bool do_calc = 1;
                 if (do_calc)
@@ -383,16 +393,16 @@ int main(int argc, char **argv)
     int index = 0;
     unsigned long long total = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
-    for(int i = 0; i < nbins+2; i++)
+    for(int i = 0; i < nbins; i++)
     {
         printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
-        for(int j = 0; j < nbins+2; j++)
+        for(int j = 0; j < nbins; j++)
         {
-            for(int k = 0; k < nbins+2; k++)
+            for(int k = 0; k < nbins; k++)
             {
 
-                index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i; 
+                index = (nbins)*(nbins)*k + (nbins)*j + i; 
                 printf("%ul ",hist[index]);
                 fprintf(outfile,"%ul ",hist[index]);
                 total += hist[index];
