@@ -233,7 +233,10 @@ __global__ void distance(
         //shared_hist[threadIdx.x + 8*threadIdx.y + 64*threadIdx.z] = totbin;
 
         if (totbin<NUM_BINS*NUM_BINS)
+        {
             atomicAdd(&shared_hist[totbin+1],1);
+            //shared_hist[totbin+1]+=1;
+        }
 
         //if (tidx<NUM_BINS*NUM_BINS)
             //atomicAdd(&shared_hist[tidx],totbin);
