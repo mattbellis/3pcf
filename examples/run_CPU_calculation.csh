@@ -23,7 +23,7 @@ set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 # Bin width of 1.0 (-w 1.0)
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
-//set global_params = '-w 0.01 -L 0.00 -l 0'
+#set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
 set tag = 'evenbinning_CPU'
 

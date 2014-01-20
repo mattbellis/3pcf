@@ -9,6 +9,7 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
 #define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
@@ -25,7 +26,8 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-#define DEFAULT_NBINS 16
+//#define DEFAULT_NBINS 16
+#define DEFAULT_NBINS 8
 //#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -493,6 +495,7 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
+    //grid.x = 8; // Is this the number of blocks?
     grid.x = 8; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
@@ -538,10 +541,10 @@ int main(int argc, char **argv)
     printf("dev_hist bins: %d\n",size_hist);
     printf("dev_hist size: %d\n",size_hist_bytes);
 
-    int *summed_hist;
+    unsigned long int *summed_hist;
 
-    int summed_hist_size = tot_nbins * sizeof(int);
-    summed_hist =  (int*)malloc(summed_hist_size);
+    unsigned long int summed_hist_size = tot_nbins * sizeof(unsigned long int);
+    summed_hist =  (unsigned long int*)malloc(summed_hist_size);
     printf("Size of summed histogram array: %d bins\t%d bytes\n",(tot_nbins),summed_hist_size);
     memset(summed_hist,0,summed_hist_size); 
 
@@ -598,7 +601,7 @@ int main(int argc, char **argv)
 
     int xind, yind, zind;
     int bin_index = 0;
-    unsigned long tot0 = 0;
+    unsigned long long tot0 = 0;
     //for(int i = 0; i < NUM_GALAXIES[0]; i++)
     for(int i = 0; i < num_submatrices[0]; i++)
     {
@@ -660,10 +663,13 @@ int main(int argc, char **argv)
                     //printf("there\n");
                     //printf("dev_hist: %x\n",dev_hist);
 
+                    error = cudaGetLastError();
+                    printf("kernel ERROR: %s\n", cudaGetErrorString(error) );
+
                     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
-                    //cudaError_t error = cudaGetLastError();
-                    //printf("ERROR: %s\n", cudaGetErrorString(error) );
+                    cudaError_t error = cudaGetLastError();
+                    printf("memcpy ERROR: %s\n", cudaGetErrorString(error) );
 
                     ////////////////////////////////////////////////////////////////////
                     // Sum up the histograms from each thread (hist).
@@ -673,7 +679,7 @@ int main(int argc, char **argv)
                         bin_index = m%(tot_nbins);
                         //if (hist[m]!=0)
                         //{
-                        //printf("%d %ul\n",m,hist[m]);
+                        //printf("%d %lu\n",m,hist[m]);
                         //}
                         summed_hist[bin_index] += hist[m];
                         tot0 += hist[m];
@@ -685,7 +691,7 @@ int main(int argc, char **argv)
 
     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
-    unsigned long total = 0;
+    unsigned long long total = 0;
     int index = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
     for(int i = 0; i < nbins; i++)
@@ -699,16 +705,16 @@ int main(int argc, char **argv)
             for(int k = 0; k < nbins; k++)
             {
                 index = (nbins)*(nbins)*k + (nbins)*j + i;
-                //printf("%ul ",summed_hist[index]);
-                fprintf(outfile,"%ul ",summed_hist[index]);
+                //printf("%lu ",summed_hist[index]);
+                fprintf(outfile,"%lu ",summed_hist[index]);
                 total += summed_hist[index];
             }
             fprintf(outfile,"\n");
             //printf("\n");
         }
     }
-    printf("total: %ul\n",total);
-    printf("tot0: %ul\n",tot0);
+    printf("total: %llu\n",total);
+    printf("tot0: %llu\n",tot0);
 
     ////////////////////////////////////////////////////////////////////////////
     // Close out the files and free up the memory.

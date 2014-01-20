@@ -11,7 +11,8 @@ using namespace std;
 
 //#define DEFAULT_NBINS 20 // for log binning
 //#define DEFAULT_NBINS 64 // for log binning
-#define DEFAULT_NBINS 16 // for log binning
+//#define DEFAULT_NBINS 16 // for log binning
+#define DEFAULT_NBINS 8 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
@@ -343,10 +344,12 @@ int main(int argc, char **argv)
     int x, y;
     float dist = 0;
 
+    unsigned long long int fake_tot = 0;
+
     int bin_index = 0;
     for(int i = 0; i < NUM_GALAXIES[0]; i++)
     {
-        if (i%10==0)
+        if (i%1000==0)
         {
             printf("%d\n",i);
             fflush(stdout); 
@@ -375,6 +378,7 @@ int main(int argc, char **argv)
             //for(int k =kmin; k < NUM_GALAXIES[2]; k++)
             for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
+                ///*
                 bool do_calc = 1;
                 if (do_calc)
                 {
@@ -386,9 +390,15 @@ int main(int argc, char **argv)
                     //printf("%d\n",bin_index);
                     hist[bin_index]++;
                 }
+                //*/
+                fake_tot += 1;
             }
         }
     }  
+
+    printf("Fake tot: %llu\n",fake_tot);
+
+    //exit(0);
 
     int index = 0;
     unsigned long long total = 0;
@@ -403,8 +413,8 @@ int main(int argc, char **argv)
             {
 
                 index = (nbins)*(nbins)*k + (nbins)*j + i; 
-                printf("%ul ",hist[index]);
-                fprintf(outfile,"%ul ",hist[index]);
+                printf("%lu ",hist[index]);
+                fprintf(outfile,"%lu ",hist[index]);
                 total += hist[index];
             }
             fprintf(outfile,"\n");
@@ -412,7 +422,7 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("Total: %ul\n",total);
+    printf("Total: %lu\n",total);
 
     fclose(outfile);
     return 0;
