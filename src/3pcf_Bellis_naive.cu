@@ -25,7 +25,7 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-#define DEFAULT_NBINS 14 
+#define DEFAULT_NBINS 16
 //#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -89,8 +89,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////////
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
 
-    //int tot_hist_size = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
-    int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
+    int tot_hist_size = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    //int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
 
     int idxorg = idx;
 
@@ -99,8 +99,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    //__shared__ int shared_hist[(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)];
-    __shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
+    __shared__ int shared_hist[(DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS)];
+    //__shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
@@ -109,6 +109,8 @@ __global__ void distance(
     }
     __syncthreads();
     ////////////////////////////////////////////////////////////////////////
+
+    int DEFAULT_NBINS2 = DEFAULT_NBINS*DEFAULT_NBINS;
 
     float x0i = 0.0;
     float y0i = 0.0;
@@ -153,7 +155,7 @@ __global__ void distance(
     //int nhistbins2 = nhistbins*nhistbins;
     int totbin = 0;
 
-    //if (idx<max_xind)
+    if (idx<max_xind)
     {
         # pragma unroll
         for(j=yind; j<ymax; j++)
@@ -178,14 +180,6 @@ __global__ void distance(
                     zdiff = z1[j]-z2[k];
                     dist2 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                    b0 = int(dist0<dist1);
-                    b1 = int(dist1<dist2);
-                    b2 = int(dist0<dist2);
-
-                    notb0 = !b0;
-                    notb1 = !b1;
-                    notb2 = !b2;
-
                     i0=0; // shortest
                     i1=0; // middlest
                     i2=0; // longest
@@ -200,12 +194,13 @@ __global__ void distance(
                     //totbin = nhistbins2*((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) +  \
                     nhistbins*((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0) +  \
                         ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
-                    ti2 = ((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) ;
-                    ti1 = ((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0);
-                    ti0 = ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
+                    //ti2 = ((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) ;
+                    //ti1 = ((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0);
+                    //ti0 = ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
 
                     //totbin = ti2 + (ti1*(ti1+1))/2 + (ti0*(ti0+1)*(ti0+2))/6;
-                    totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
+                    //totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
+                    totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
                     //totbin = 1.0;
 
                     //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
@@ -292,7 +287,8 @@ __global__ void distance(
                     //shared_hist[totbin]++;
 
                     // THIS SEEMS TO WORK HERE!!!!!!
-                    if (j>idx+1 && k>j+1 && idx<max_xind)
+                    //if (j>idx+1 && k>j+1 && idx<max_xind)
+                    if (totbin>=0 && totbin<tot_hist_size)
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
@@ -517,8 +513,8 @@ int main(int argc, char **argv)
     // This is the total number of bins/bytes we need for all of the 
     // different histograms we'll be creating
     ////////////////////////////////////////////////////////////////////////////
-    //int tot_nbins = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
-    int tot_nbins = (DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6;
+    int tot_nbins = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    //int tot_nbins = (DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6;
     //int size_hist = SUBMATRIX_SIZE*tot_nbins;
     //int size_hist = 4*tot_nbins;
     int size_hist = grid.x*tot_nbins;
@@ -692,17 +688,17 @@ int main(int argc, char **argv)
     unsigned long total = 0;
     int index = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
-    for(int i = 0; i < nbins+2; i++)
+    for(int i = 0; i < nbins; i++)
     {
         //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
-        for(int j = i; j < nbins+2; j++)
+        //for(int j = i; j < nbins; j++)
+        for(int j = 0; j < nbins; j++)
         {
-            for(int k = j; k < nbins+2; k++)
+            //for(int k = j; k < nbins; k++)
+            for(int k = 0; k < nbins; k++)
             {
-                //index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i;
-                //index = ((i+2)*(i+1)*i)/6 + ((j+1)*j)/2 + k;
-                index = (i)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(i+1) + (i+1)*(i+1))/6 + (j)*(2*(nbins+2)-(j+1))/2 + k;
+                index = (nbins)*(nbins)*k + (nbins)*j + i;
                 //printf("%ul ",summed_hist[index]);
                 fprintf(outfile,"%ul ",summed_hist[index]);
                 total += summed_hist[index];

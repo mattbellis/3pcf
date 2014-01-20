@@ -2,7 +2,8 @@
 
 set BIN_DIR = '../bin/'
 #set executable = $BIN_DIR/'3pcf_Bellis'
-set executable = $BIN_DIR/'3pcf_Bellis_2D_histo_on_GPU'
+set executable = $BIN_DIR/'3pcf_Bellis_naive'
+#set executable = $BIN_DIR/'3pcf_Bellis_2D_histo_on_GPU'
 #set executable = $BIN_DIR/'3pcf_Bellis_totes_different'
 
 set ngals = 1 # In thousands (10 = 10k)
@@ -27,7 +28,8 @@ set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 ################################################################################
 #set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
-set tag = 'evenbinning_GPU_2D_histo_on_GPU'
+#set tag = 'evenbinning_GPU_2D_histo_on_GPU'
+set tag = 'evenbinning_GPU_naive'
 
 ################################################################################
 # Read in data.
