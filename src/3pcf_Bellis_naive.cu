@@ -9,9 +9,9 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
-//#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
-#define SUBMATRIX_SIZE 1024
+//#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
@@ -26,8 +26,8 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-//#define DEFAULT_NBINS 16
-#define DEFAULT_NBINS 8
+#define DEFAULT_NBINS 16
+//#define DEFAULT_NBINS 8
 //#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -76,6 +76,7 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
+        float *x0, float *y0, float *z0, \
         float *x1, float *y1, float *z1, \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
@@ -167,14 +168,14 @@ __global__ void distance(
             for(k=zind; k<zmax; k++)
             //for(k=j+1; k<zmax; k++)
             {
-                    xdiff = x1[idx]-x1[j];
-                    ydiff = y1[idx]-y1[j];
-                    zdiff = z1[idx]-z1[j];
+                    xdiff = x0[idx]-x1[j];
+                    ydiff = y0[idx]-y1[j];
+                    zdiff = z0[idx]-z1[j];
                     dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                    xdiff = x1[idx]-x2[k];
-                    ydiff = y1[idx]-y2[k];
-                    zdiff = z1[idx]-z2[k];
+                    xdiff = x0[idx]-x2[k];
+                    ydiff = y0[idx]-y2[k];
+                    zdiff = z0[idx]-z2[k];
                     dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
                     xdiff = x1[j]-x2[k];
@@ -654,6 +655,7 @@ int main(int argc, char **argv)
                     printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
+                            d_x[0],d_y[0],d_z[0],\
                             d_x[1],d_y[1],d_z[1],\
                             d_x[2],d_y[2],d_z[2],\
                             xind, yind, zind, \
