@@ -16,8 +16,13 @@ if ( $2 != '' ) then
     set which_part = $2
 endif
 
-set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
-set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+#set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
+#set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
+set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
+
+ls -l $input0
+ls -l $input1
 
 
 ################################################################################
@@ -29,7 +34,7 @@ set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 #set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
 #set tag = 'evenbinning_GPU_2D_histo_on_GPU'
-set tag = 'evenbinning_GPU_naive'
+set tag = 'evenbinning_GPU_naive_16bin_cartesian'
 
 ################################################################################
 # Read in data.

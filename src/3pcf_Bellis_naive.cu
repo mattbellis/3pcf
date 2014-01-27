@@ -9,8 +9,13 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
+<<<<<<< HEAD
 //#define SUBMATRIX_SIZE 4096
 #define SUBMATRIX_SIZE 2048
+=======
+#define SUBMATRIX_SIZE 4096
+//#define SUBMATRIX_SIZE 2048
+>>>>>>> cae154a62dea05675485e7d6127ae9f587daaeed
 //#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
@@ -76,6 +81,7 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
+        float *x0, float *y0, float *z0, \
         float *x1, float *y1, float *z1, \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
@@ -167,14 +173,14 @@ __global__ void distance(
             for(k=zind; k<zmax; k++)
             //for(k=j+1; k<zmax; k++)
             {
-                    xdiff = x1[idx]-x1[j];
-                    ydiff = y1[idx]-y1[j];
-                    zdiff = z1[idx]-z1[j];
+                    xdiff = x0[idx]-x1[j];
+                    ydiff = y0[idx]-y1[j];
+                    zdiff = z0[idx]-z1[j];
                     dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                    xdiff = x1[idx]-x2[k];
-                    ydiff = y1[idx]-y2[k];
-                    zdiff = z1[idx]-z2[k];
+                    xdiff = x0[idx]-x2[k];
+                    ydiff = y0[idx]-y2[k];
+                    zdiff = z0[idx]-z2[k];
                     dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
                     xdiff = x1[j]-x2[k];
@@ -337,7 +343,9 @@ int main(int argc, char **argv)
 
     float hist_min = 0;
     //float hist_max = 1.8;
-    float hist_max = 7000.0;
+    //float hist_max = 7000.0;
+    //float hist_max = sqrt(3.0*(24*24)); // For the nearest 1k in Wechsler
+    float hist_max = sqrt(3.0*(48.6*48.6)); // For the nearest 10k in Wechsler
     float bin_width = (hist_max-hist_min)/nbins;
     float hist_bin_width = bin_width; // For now
     int flag = 0;
@@ -495,7 +503,7 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    //grid.x = 8; // Is this the number of blocks?
+    //grid.x = 16; // Is this the number of blocks?
     grid.x = 8; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
@@ -654,6 +662,7 @@ int main(int argc, char **argv)
                     printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
+                            d_x[0],d_y[0],d_z[0],\
                             d_x[1],d_y[1],d_z[1],\
                             d_x[2],d_y[2],d_z[2],\
                             xind, yind, zind, \
