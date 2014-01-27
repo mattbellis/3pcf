@@ -11,8 +11,8 @@ using namespace std;
 
 //#define DEFAULT_NBINS 20 // for log binning
 //#define DEFAULT_NBINS 64 // for log binning
-//#define DEFAULT_NBINS 16 // for log binning
-#define DEFAULT_NBINS 8 // for log binning
+#define DEFAULT_NBINS 16 // for log binning
+//#define DEFAULT_NBINS 8 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
