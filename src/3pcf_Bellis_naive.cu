@@ -10,8 +10,8 @@ using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
 //#define SUBMATRIX_SIZE 4096
-//#define SUBMATRIX_SIZE 2048
-#define SUBMATRIX_SIZE 1024
+#define SUBMATRIX_SIZE 2048
+//#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
@@ -26,8 +26,8 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-//#define DEFAULT_NBINS 16
-#define DEFAULT_NBINS 8
+#define DEFAULT_NBINS 16
+//#define DEFAULT_NBINS 8
 //#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
