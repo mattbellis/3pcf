@@ -9,9 +9,9 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
-//#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
-#define SUBMATRIX_SIZE 1024
+//#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
