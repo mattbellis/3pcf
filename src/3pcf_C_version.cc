@@ -10,9 +10,9 @@ using namespace std;
 #define HIST_MAX 100.0 // for degrees
 
 //#define DEFAULT_NBINS 20 // for log binning
-//#define DEFAULT_NBINS 64 // for log binning
-#define DEFAULT_NBINS 16 // for log binning
-//#define DEFAULT_NBINS 8 // for log binning
+#define DEFAULT_NBINS 64 // for log binning
+//#define DEFAULT_NBINS 16 // for log binning
+//#define DEFAULT_NBINS 4 // for log binning
 //#define DEFAULT_NBINS 126 // for log binning
 //#define DEFAULT_NBINS 62 // for log binning
 
@@ -155,6 +155,9 @@ int main(int argc, char **argv)
     char defaultoutfilename[256];
     sprintf(defaultoutfilename,"default_out.dat");
 
+    char histout[1024];
+    sprintf(histout,"0");
+
     float hist_lower_range = 0.0000001;
     float hist_upper_range = 0;
     float hist_bin_width = 0.05;
@@ -165,7 +168,8 @@ int main(int argc, char **argv)
 
     float hist_min = 0;
     //float hist_max = 1.8;
-    float hist_max = 7000.0;
+    //float hist_max = 7000.0;
+    float hist_max = sqrt(3*24*24);
     int nbins = DEFAULT_NBINS;
     float bin_width = (hist_max-hist_min)/nbins;
     int flag = 0;
@@ -332,6 +336,7 @@ int main(int argc, char **argv)
     ///////////////////////////////////////////////////////////////////////////
 
     unsigned long long *hist;
+    unsigned long long *temp_hist;
     //int nbins;
     int log_binning=flag;
 
@@ -341,15 +346,23 @@ int main(int argc, char **argv)
     hist = (unsigned long long*)malloc(size_hist_bytes);
     memset(hist, 0, size_hist_bytes);
 
+    temp_hist = (unsigned long long*)malloc(size_hist_bytes);
+    memset(temp_hist, 0, size_hist_bytes);
+
     int x, y;
     float dist = 0;
 
     unsigned long long int fake_tot = 0;
 
+    bool locked = false;
     int bin_index = 0;
+    int calc_count = 0;
+    int calc_count_max = 100;
+    int num_locked = 0;
+    int num_not_locked = 0;
     for(int i = 0; i < NUM_GALAXIES[0]; i++)
     {
-        if (i%1000==0)
+        if (i%100==0)
         {
             printf("%d\n",i);
             fflush(stdout); 
@@ -389,6 +402,29 @@ int main(int argc, char **argv)
 
                     //printf("%d\n",bin_index);
                     hist[bin_index]++;
+                    temp_hist[bin_index]++;
+                    calc_count += 1;
+                    if (calc_count>calc_count_max)
+                    {
+                        for(int i=0;i<size_hist;i++)
+                        {
+                           if(temp_hist[i]>1)
+                           {
+                               printf("%d %d %d   ",calc_count,i,temp_hist[i]);
+                               locked = true;
+                           }
+                        }
+                       printf("--------\n");
+
+                        if (locked)
+                            num_locked++;
+                        else
+                            num_not_locked++;
+
+                        memset(temp_hist, 0, size_hist_bytes);
+                        calc_count = 0;
+                        locked = false;
+                    }
                 }
                 //*/
                 fake_tot += 1;
@@ -396,6 +432,8 @@ int main(int argc, char **argv)
         }
     }  
 
+    printf("Num locked: %llu\n",num_locked);
+    printf("Num not locked: %llu\n",num_not_locked);
     printf("Fake tot: %llu\n",fake_tot);
 
     //exit(0);
