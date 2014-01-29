@@ -1,7 +1,10 @@
 #!/bin/csh
 
 set BIN_DIR = '../bin/'
-set executable = $BIN_DIR/'3pcf_C_version'
+#set executable = $BIN_DIR/'3pcf_Bellis'
+set executable = $BIN_DIR/'3pcf_Bellis_naive'
+#set executable = $BIN_DIR/'3pcf_Bellis_2D_histo_on_GPU'
+#set executable = $BIN_DIR/'3pcf_Bellis_totes_different'
 
 set ngals = 1 # In thousands (10 = 10k)
 if ( $1 != '' ) then
@@ -13,8 +16,13 @@ if ( $2 != '' ) then
     set which_part = $2
 endif
 
-set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
-set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+#set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
+#set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
+set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
+
+ls -l $input0
+ls -l $input1
 
 
 ################################################################################
@@ -25,7 +33,8 @@ set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 ################################################################################
 #set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
-set tag = 'evenbinning_CPU'
+#set tag = 'evenbinning_GPU_2D_histo_on_GPU'
+set tag = 'evenbinning_GPU_naive_16bin_cartesian'
 
 ################################################################################
 # Read in data.
@@ -34,7 +43,7 @@ set tag = 'evenbinning_CPU'
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
 #set global_params = '-w 0.05 -L 1.00 -l 1'
-#set tag = 'logbinning_CPU'
+#set tag = 'logbinning_GPU'
 
 ################################################################################
 # Read in data.
@@ -43,7 +52,7 @@ set tag = 'evenbinning_CPU'
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
 #set global_params = '-w 0.02 -L 1.00 -l 2'
-#set tag = 'log10binning_CPU'
+#set tag = 'log10binning_GPU'
 
 
 if ( $which_part == 'all' ) then
@@ -59,6 +68,7 @@ if ( $which_part == 'all' ) then
 
 else if ( $which_part == '0' ) then
     echo "#####################"
+    echo $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
     time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
 else if ( $which_part == '1' ) then
     echo "#####################"

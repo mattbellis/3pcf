@@ -9,8 +9,9 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
+#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
-#define SUBMATRIX_SIZE 1024
+//#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
@@ -25,7 +26,8 @@ using namespace std;
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-#define DEFAULT_NBINS 14 
+#define DEFAULT_NBINS 16
+//#define DEFAULT_NBINS 8
 //#define DEFAULT_NBINS 6 
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -74,6 +76,7 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 ////////////////////////////////////////////////////////////////////////
 //__global__ void distance(float *x0, float *y0, float *z0, 
 __global__ void distance(
+        float *x0, float *y0, float *z0, \
         float *x1, float *y1, float *z1, \
         float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
@@ -89,8 +92,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////////
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
 
-    //int tot_hist_size = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
-    int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
+    int tot_hist_size = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    //int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
 
     int idxorg = idx;
 
@@ -99,8 +102,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    //__shared__ int shared_hist[(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)];
-    __shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
+    __shared__ int shared_hist[(DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS)];
+    //__shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
@@ -109,6 +112,8 @@ __global__ void distance(
     }
     __syncthreads();
     ////////////////////////////////////////////////////////////////////////
+
+    int DEFAULT_NBINS2 = DEFAULT_NBINS*DEFAULT_NBINS;
 
     float x0i = 0.0;
     float y0i = 0.0;
@@ -153,7 +158,7 @@ __global__ void distance(
     //int nhistbins2 = nhistbins*nhistbins;
     int totbin = 0;
 
-    //if (idx<max_xind)
+    if (idx<max_xind)
     {
         # pragma unroll
         for(j=yind; j<ymax; j++)
@@ -163,28 +168,20 @@ __global__ void distance(
             for(k=zind; k<zmax; k++)
             //for(k=j+1; k<zmax; k++)
             {
-                    xdiff = x1[idx]-x1[j];
-                    ydiff = y1[idx]-y1[j];
-                    zdiff = z1[idx]-z1[j];
+                    xdiff = x0[idx]-x1[j];
+                    ydiff = y0[idx]-y1[j];
+                    zdiff = z0[idx]-z1[j];
                     dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                    xdiff = x1[idx]-x2[k];
-                    ydiff = y1[idx]-y2[k];
-                    zdiff = z1[idx]-z2[k];
+                    xdiff = x0[idx]-x2[k];
+                    ydiff = y0[idx]-y2[k];
+                    zdiff = z0[idx]-z2[k];
                     dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
                     xdiff = x1[j]-x2[k];
                     ydiff = y1[j]-y2[k];
                     zdiff = z1[j]-z2[k];
                     dist2 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-
-                    b0 = int(dist0<dist1);
-                    b1 = int(dist1<dist2);
-                    b2 = int(dist0<dist2);
-
-                    notb0 = !b0;
-                    notb1 = !b1;
-                    notb2 = !b2;
 
                     i0=0; // shortest
                     i1=0; // middlest
@@ -200,12 +197,13 @@ __global__ void distance(
                     //totbin = nhistbins2*((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) +  \
                     nhistbins*((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0) +  \
                         ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
-                    ti2 = ((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) ;
-                    ti1 = ((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0);
-                    ti0 = ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
+                    //ti2 = ((b1*b2)*i2  + (b0*(notb1))*i1 + ((notb0)*(notb2))*i0) ;
+                    //ti1 = ((notb1*b2 + b1*notb2)*i2 + (b0*b1 + (notb0*notb1))*i1 + (notb0*b2 + b0*notb2)*i0);
+                    //ti0 = ((notb1*notb2)*i2  + (notb0*(b1))*i1 + ((b0)*(b2))*i0);
 
                     //totbin = ti2 + (ti1*(ti1+1))/2 + (ti0*(ti0+1)*(ti0+2))/6;
-                    totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
+                    //totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
+                    totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
                     //totbin = 1.0;
 
                     //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
@@ -292,7 +290,8 @@ __global__ void distance(
                     //shared_hist[totbin]++;
 
                     // THIS SEEMS TO WORK HERE!!!!!!
-                    if (j>idx+1 && k>j+1 && idx<max_xind)
+                    //if (j>idx+1 && k>j+1 && idx<max_xind)
+                    if (totbin>=0 && totbin<tot_hist_size)
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
@@ -339,7 +338,9 @@ int main(int argc, char **argv)
 
     float hist_min = 0;
     //float hist_max = 1.8;
-    float hist_max = 7000.0;
+    //float hist_max = 7000.0;
+    //float hist_max = sqrt(3.0*(24*24)); // For the nearest 1k in Wechsler
+    float hist_max = sqrt(3.0*(48.6*48.6)); // For the nearest 10k in Wechsler
     float bin_width = (hist_max-hist_min)/nbins;
     float hist_bin_width = bin_width; // For now
     int flag = 0;
@@ -497,6 +498,7 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
+    //grid.x = 16; // Is this the number of blocks?
     grid.x = 8; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
@@ -517,8 +519,8 @@ int main(int argc, char **argv)
     // This is the total number of bins/bytes we need for all of the 
     // different histograms we'll be creating
     ////////////////////////////////////////////////////////////////////////////
-    //int tot_nbins = (DEFAULT_NBINS+2)*(DEFAULT_NBINS+2)*(DEFAULT_NBINS+2);
-    int tot_nbins = (DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6;
+    int tot_nbins = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    //int tot_nbins = (DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6;
     //int size_hist = SUBMATRIX_SIZE*tot_nbins;
     //int size_hist = 4*tot_nbins;
     int size_hist = grid.x*tot_nbins;
@@ -542,10 +544,10 @@ int main(int argc, char **argv)
     printf("dev_hist bins: %d\n",size_hist);
     printf("dev_hist size: %d\n",size_hist_bytes);
 
-    int *summed_hist;
+    unsigned long int *summed_hist;
 
-    int summed_hist_size = tot_nbins * sizeof(int);
-    summed_hist =  (int*)malloc(summed_hist_size);
+    unsigned long int summed_hist_size = tot_nbins * sizeof(unsigned long int);
+    summed_hist =  (unsigned long int*)malloc(summed_hist_size);
     printf("Size of summed histogram array: %d bins\t%d bytes\n",(tot_nbins),summed_hist_size);
     memset(summed_hist,0,summed_hist_size); 
 
@@ -602,7 +604,7 @@ int main(int argc, char **argv)
 
     int xind, yind, zind;
     int bin_index = 0;
-    unsigned long tot0 = 0;
+    unsigned long long tot0 = 0;
     //for(int i = 0; i < NUM_GALAXIES[0]; i++)
     for(int i = 0; i < num_submatrices[0]; i++)
     {
@@ -655,6 +657,7 @@ int main(int argc, char **argv)
                     printf("nbins: %d\n",nbins);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
+                            d_x[0],d_y[0],d_z[0],\
                             d_x[1],d_y[1],d_z[1],\
                             d_x[2],d_y[2],d_z[2],\
                             xind, yind, zind, \
@@ -664,10 +667,13 @@ int main(int argc, char **argv)
                     //printf("there\n");
                     //printf("dev_hist: %x\n",dev_hist);
 
+                    error = cudaGetLastError();
+                    printf("kernel ERROR: %s\n", cudaGetErrorString(error) );
+
                     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
-                    //cudaError_t error = cudaGetLastError();
-                    //printf("ERROR: %s\n", cudaGetErrorString(error) );
+                    cudaError_t error = cudaGetLastError();
+                    printf("memcpy ERROR: %s\n", cudaGetErrorString(error) );
 
                     ////////////////////////////////////////////////////////////////////
                     // Sum up the histograms from each thread (hist).
@@ -677,7 +683,7 @@ int main(int argc, char **argv)
                         bin_index = m%(tot_nbins);
                         //if (hist[m]!=0)
                         //{
-                        //printf("%d %ul\n",m,hist[m]);
+                        //printf("%d %lu\n",m,hist[m]);
                         //}
                         summed_hist[bin_index] += hist[m];
                         tot0 += hist[m];
@@ -689,30 +695,30 @@ int main(int argc, char **argv)
 
     cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
-    unsigned long total = 0;
+    unsigned long long total = 0;
     int index = 0;
     fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
-    for(int i = 0; i < nbins+2; i++)
+    for(int i = 0; i < nbins; i++)
     {
         //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
-        for(int j = i; j < nbins+2; j++)
+        //for(int j = i; j < nbins; j++)
+        for(int j = 0; j < nbins; j++)
         {
-            for(int k = j; k < nbins+2; k++)
+            //for(int k = j; k < nbins; k++)
+            for(int k = 0; k < nbins; k++)
             {
-                //index = (nbins+2)*(nbins+2)*k + (nbins+2)*j + i;
-                //index = ((i+2)*(i+1)*i)/6 + ((j+1)*j)/2 + k;
-                index = (i)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(i+1) + (i+1)*(i+1))/6 + (j)*(2*(nbins+2)-(j+1))/2 + k;
-                //printf("%ul ",summed_hist[index]);
-                fprintf(outfile,"%ul ",summed_hist[index]);
+                index = (nbins)*(nbins)*k + (nbins)*j + i;
+                //printf("%lu ",summed_hist[index]);
+                fprintf(outfile,"%lu ",summed_hist[index]);
                 total += summed_hist[index];
             }
             fprintf(outfile,"\n");
             //printf("\n");
         }
     }
-    printf("total: %ul\n",total);
-    printf("tot0: %ul\n",tot0);
+    printf("total: %llu\n",total);
+    printf("tot0: %llu\n",tot0);
 
     ////////////////////////////////////////////////////////////////////////////
     // Close out the files and free up the memory.
