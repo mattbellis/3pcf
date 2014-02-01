@@ -154,33 +154,58 @@ __global__ void distance(
     float dist1 = 0.0;
     float dist2 = 0.0;
 
+    float xpt0,ypt0,zpt0;
+    float xpt1,ypt1,zpt1;
+    float xpt2,ypt2,zpt2;
+
     //int nhistbins = nbins+2;
     //int nhistbins2 = nhistbins*nhistbins;
     int totbin = 0;
 
     if (idx<max_xind)
     {
+        xpt0 = x0[idx];
+        ypt0 = y0[idx];
+        zpt0 = z0[idx];
+
         # pragma unroll
         for(j=yind; j<ymax; j++)
         //for(j=idx+1; j<ymax; j++)
         {
+            xpt1 = x1[j];
+            ypt1 = y1[j];
+            zpt1 = z1[j];
+
+            //xdiff = x0[idx]-x1[j];
+            //ydiff = y0[idx]-y1[j];
+            //zdiff = z0[idx]-z1[j];
+            xdiff = xpt0-xpt1;
+            ydiff = ypt0-ypt1;
+            zdiff = zpt0-zpt1;
+            dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+
             # pragma unroll
             for(k=zind; k<zmax; k++)
             //for(k=j+1; k<zmax; k++)
             {
-                    xdiff = x0[idx]-x1[j];
-                    ydiff = y0[idx]-y1[j];
-                    zdiff = z0[idx]-z1[j];
-                    dist0 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+                    xpt2 = x2[k];
+                    ypt2 = y2[k];
+                    zpt2 = z2[k];
 
-                    xdiff = x0[idx]-x2[k];
-                    ydiff = y0[idx]-y2[k];
-                    zdiff = z0[idx]-z2[k];
+                    //xdiff = x0[idx]-x2[k];
+                    //ydiff = y0[idx]-y2[k];
+                    //zdiff = z0[idx]-z2[k];
+                    xdiff = xpt0-xpt2;
+                    ydiff = ypt0-ypt2;
+                    zdiff = zpt0-zpt2;
                     dist1 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-                    xdiff = x1[j]-x2[k];
-                    ydiff = y1[j]-y2[k];
-                    zdiff = z1[j]-z2[k];
+                    //xdiff = x1[j]-x2[k];
+                    //ydiff = y1[j]-y2[k];
+                    //zdiff = z1[j]-z2[k];
+                    xdiff = xpt1-xpt2;
+                    ydiff = ypt1-ypt2;
+                    zdiff = zpt1-zpt2;
                     dist2 = sqrtf(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
                     i0=0; // shortest
