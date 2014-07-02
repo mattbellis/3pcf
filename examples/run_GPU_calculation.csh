@@ -34,7 +34,7 @@ ls -l $input1
 #set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
 #set tag = 'evenbinning_GPU_2D_histo_on_GPU'
-set tag = 'evenbinning_GPU_naive_16bin_cartesian'
+set tag = 'TIMING_evenbinning_GPU_naive_16bin_cartesian'
 
 ################################################################################
 # Read in data.
