@@ -18,11 +18,11 @@ INSTALL_DIR       := ../bin/
 # environment variables and will depend on your system and where the CUDA
 # libraries and header files are installed.
 #SDK_INSTALL_PATH  := ${HOME}/CUDA/SDK_4.0/
-CUDA_INSTALL_PATH := /opt/cuda-5.5/
-SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
+#CUDA_INSTALL_PATH := /opt/cuda-5.5/
+#SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
 #CUDA_INSTALL_PATH := /usr/local/cuda/
-#SDK_INSTALL_PATH  := /usr/include
-#CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
+SDK_INSTALL_PATH  := /usr/include
+CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
 
 # While the INCLUDES and LIBS flags are dependent on the install path, there may 
 # still be some subdirectories that are machine-dependent. 
