@@ -9,9 +9,9 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
-#define SUBMATRIX_SIZE 4096
+//#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
-//#define SUBMATRIX_SIZE 1024
+#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
@@ -320,7 +320,8 @@ __global__ void distance(
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
-                        atomicAdd(&shared_hist[totbin],1);
+                        shared_hist[totbin]++;
+                        //atomicAdd(&shared_hist[totbin],1);
                     }
 
             }
@@ -364,8 +365,8 @@ int main(int argc, char **argv)
     float hist_min = 0;
     //float hist_max = 1.8;
     //float hist_max = 7000.0;
-    //float hist_max = sqrt(3.0*(24*24)); // For the nearest 1k in Wechsler
-    float hist_max = sqrt(3.0*(48.6*48.6)); // For the nearest 10k in Wechsler
+    float hist_max = sqrt(3.0*(24*24)); // For the nearest 1k in Wechsler
+    //float hist_max = sqrt(3.0*(48.6*48.6)); // For the nearest 10k in Wechsler
     float bin_width = (hist_max-hist_min)/nbins;
     float hist_bin_width = bin_width; // For now
     int flag = 0;
@@ -523,8 +524,9 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    //grid.x = 16; // Is this the number of blocks?
+    //grid.x = 32; // Is this the number of blocks?
     grid.x = 8; // Is this the number of blocks?
+    //grid.x = 4; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     // SUBMATRIX is the number of threads per warp? Per kernel call?

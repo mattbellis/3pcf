@@ -13,8 +13,10 @@ if ( $2 != '' ) then
     set which_part = $2
 endif
 
-set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
-set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+#set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
+#set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
+set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
+set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
 
 
 ################################################################################
