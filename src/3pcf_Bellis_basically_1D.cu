@@ -8,8 +8,8 @@
 
 using namespace std;
 
-//#define SUBMATRIX_SIZE 16384
-#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
 //#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
@@ -228,7 +228,9 @@ __global__ void distance(
 
                     //totbin = ti2 + (ti1*(ti1+1))/2 + (ti0*(ti0+1)*(ti0+2))/6;
                     //totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
-                    totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
+                    //////// THIS IS WHAT WE WERE USING!
+                    //totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
+
                     //totbin = 1.0;
 
                     //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
@@ -318,8 +320,11 @@ __global__ void distance(
                     //if (j>idx+1 && k>j+1 && idx<max_xind)
                     //if (totbin>=0 && totbin<tot_hist_size)
                     //if (0)
-                    if (i0>=0 && i0<tot_hist_size)
+                    //if (i2==12)
+                    //if (i1==12)
                     //if (totbin==20)
+                    //if (i0>=0 && i0<tot_hist_size)
+                    if (i2==12 && i1==12 && i0>=0 && i0<tot_hist_size)
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
@@ -730,12 +735,14 @@ int main(int argc, char **argv)
     unsigned long long total = 0;
     int index = 0;
     fprintf(outfile,"%d %d %d\n",DEFAULT_NBINS,DEFAULT_NBINS,DEFAULT_NBINS);
-    for(int i = 0; i < DEFAULT_NBINS; i++)
+    //for(int i = 0; i < DEFAULT_NBINS; i++)
+    for(int i = 0; i < 1; i++)
     {
         //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
         //for(int j = i; j < nbins; j++)
-        for(int j = 0; j < DEFAULT_NBINS; j++)
+        //for(int j = 0; j < DEFAULT_NBINS; j++)
+        for(int j = 0; j < 1; j++)
         {
             //for(int k = j; k < nbins; k++)
             for(int k = 0; k < DEFAULT_NBINS; k++)
