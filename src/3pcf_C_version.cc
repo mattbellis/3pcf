@@ -391,9 +391,8 @@ int main(int argc, char **argv)
             //for(int k =kmin; k < NUM_GALAXIES[2]; k++)
             for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
-                ///*
-                bool do_calc = 1;
-                if (do_calc)
+                //bool do_calc = 1;
+                //if (do_calc)
                 {
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                                          h_x[1][j],h_y[1][j],h_z[1][j], \
