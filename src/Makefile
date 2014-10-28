@@ -21,8 +21,10 @@ INSTALL_DIR       := ../bin/
 #CUDA_INSTALL_PATH := /opt/cuda-5.5/
 #SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
 #CUDA_INSTALL_PATH := /usr/local/cuda/
-SDK_INSTALL_PATH  := /usr/include
-CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
+#SDK_INSTALL_PATH  := /usr/include
+#CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
+CUDA_INSTALL_PATH := /usr/local/cuda/
+SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
 
 # While the INCLUDES and LIBS flags are dependent on the install path, there may 
 # still be some subdirectories that are machine-dependent. 
@@ -45,7 +47,7 @@ NVCC              := $(CUDA_INSTALL_PATH)/bin/nvcc -arch sm_20 $(COMMONFLAGS)
 ################################################################################
 # Rules for Makefile
 ################################################################################
-all: 3pcf_Bellis_totes_different 3pcf_Bellis 3pcf_Bellis_naive 3pcf_C_version 3pcf_Bellis_2D_histo_on_GPU
+all: 3pcf_Bellis_totes_different 3pcf_Bellis 3pcf_Bellis_naive 3pcf_Bellis_basically_1D 3pcf_C_version 3pcf_Bellis_2D_histo_on_GPU
 #all: 3pcf_C_version
 
 3pcf_Bellis : $(OBJ_DIR)/3pcf_Bellis.cu_o
@@ -72,6 +74,14 @@ $(OBJ_DIR)/3pcf_Bellis_naive.cu_o : 3pcf_Bellis_naive.cu
 	mkdir -p $(OBJ_DIR)
 	$(NVCC) -g -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis_naive.cu_o $<
 
+3pcf_Bellis_basically_1D : $(OBJ_DIR)/3pcf_Bellis_basically_1D.cu_o
+	mkdir -p $(INSTALL_DIR)
+	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_Bellis_basically_1D $(OBJ_DIR)//3pcf_Bellis_basically_1D.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
+
+$(OBJ_DIR)/3pcf_Bellis_basically_1D.cu_o : 3pcf_Bellis_basically_1D.cu
+	mkdir -p $(OBJ_DIR)
+	$(NVCC) -g -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis_basically_1D.cu_o $<
+
 3pcf_Bellis_2D_histo_on_GPU : $(OBJ_DIR)/3pcf_Bellis_2D_histo_on_GPU.cu_o
 	mkdir -p $(INSTALL_DIR)
 	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_Bellis_2D_histo_on_GPU $(OBJ_DIR)//3pcf_Bellis_2D_histo_on_GPU.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
@@ -90,6 +100,7 @@ clean:
 	rm -f $(INSTALL_DIR)/3pcf_Bellis
 	rm -f $(INSTALL_DIR)/3pcf_Bellis_totes_different
 	rm -f $(INSTALL_DIR)/3pcf_Bellis_naive
+	rm -f $(INSTALL_DIR)/3pcf_Bellis_basically_1D
 	rm -f $(INSTALL_DIR)/3pcf_Bellis_2D_histo_on_GPU
 	rm -f $(OBJ_DIR)/*.o 
 	rm -f $(OBJ_DIR)/*.cu_o 
