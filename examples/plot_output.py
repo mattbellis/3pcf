@@ -12,6 +12,9 @@ else:
     print "Need to pass in an input file on the command-line."
 infile = open(infilename,"r")
 
+plotx = [0,0]
+if sys.argv[2] is not None and sys.argv[3] is not None:
+    plotx = [int(sys.argv[2]),int(sys.argv[3])]
 ################################################################################
 
 nbins =  [0, 0, 0]
@@ -21,8 +24,9 @@ i = 0
 j = 0
 k = 0
 
-vals = np.array(infile.read().split()).astype('longlong')
-nbins = [vals[0]+2,vals[1]+2,vals[2]+2]
+#vals = np.array(infile.read().split()).astype('longlong')
+vals = np.array(infile.read().split()).astype('int')
+nbins = [vals[0],vals[1],vals[2]]
 pts = np.zeros((nbins[0],nbins[1],nbins[2]))
 print nbins
 print vals
@@ -39,6 +43,7 @@ for i in range(0,nbins[0]):
 
 print pts
 
+'''
 fig = []
 axes = []
 tag = infilename.split('/')[-1].split('.dat')[0]
@@ -47,16 +52,18 @@ for i in range(nbins[0]-2):
     fig.append(plt.figure())
     axes.append(fig[i].add_subplot(1,1,1))
     extent = [0,nbins[1],0,nbins[2]]
-    print extent
-    print pts[i+1]
+    #print extent
+    #print pts[i+1]
     cs = axes[i].imshow(pts[i+1],extent=extent,interpolation='nearest',origin='lower',cmap=plt.cm.coolwarm,axes=axes[i],aspect='auto')
     plt.colorbar(cs)
     #axes[i].imshow(vals[i],interpolation='nearest')
 
     name = "Plots/%sfig%03d.png" % (tag,i)
     fig[i].savefig(name)
+'''
 
 
+plt.plot(pts[plotx[0]][plotx[1]],'ko')
 print max(vals)
 print min(vals)
-#plt.show()
+plt.show()

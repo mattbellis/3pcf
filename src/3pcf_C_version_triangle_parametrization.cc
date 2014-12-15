@@ -19,6 +19,7 @@ using namespace std;
 #define CONV_FACTOR 57.2957795 // 180/pi
 
 float max_dist = 0.0;
+float min_dist = 999.0;
 
 int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, int flag)
 {
@@ -74,6 +75,10 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
     if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
 
+    if (dist0<min_dist) { min_dist = dist0; printf("min_dist: %f\n",min_dist); }
+    if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
+    if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
+
     //printf("---------\n");
     //printf("%f %f %f\n",x0,x1,x2);
     //printf("%f %f %f\n",y0,y1,y2);
@@ -95,6 +100,8 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
 
     // From Stackoverflow 
     // http://stackoverflow.com/questions/13040240/the-fastest-way-to-sort-3-values-java
+    /*
+    // This is if we want to sort all 3.
     if( dist0 > dist1 ){
         if( dist0 > dist2 ){
             longest = dist0;
@@ -131,16 +138,30 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
             shortest = dist0;
         }
     }
+    */
+
+    if(dist0<dist1)
+    {
+        shortest=dist0;
+        middle=dist1;
+        longest=dist2; // Not really longest, because we never tested for it. 
+    }
+    if(dist0>=dist1)
+    {
+        shortest=dist1;
+        middle=dist0;
+        longest=dist2; // Not really longest, because we never tested for it. 
+    }
 
     s = shortest;
     qs = middle/shortest;
-    theta = acos((shortest*shortest + middle*middle - longest*longest)/(2*shortest*middle));
+    theta = (acos((shortest*shortest + middle*middle - longest*longest)/(2*shortest*middle)))/3.14159;
 
     //printf("%f %f %f\n",s,qs,theta);
 
-    i0 = distance_to_bin(s,0,1200,60,flag); //Mpc/h, delta s=0.2
-    i1 = distance_to_bin(qs,0,3.6,18,flag); // delta qs = 0.2
-    i2 = distance_to_bin(theta,0,3.14159,25,flag);
+    i0 = distance_to_bin(s,0,120,60,flag); //Mpc/h, delta s=0.2
+    i1 = distance_to_bin(qs,0.9,4.1,16,flag); // delta qs = 0.2
+    i2 = distance_to_bin(theta,0,1.0,25,flag);
 
     //printf("%d %d %d\n",i0,i1,i2);
     if (i0<0 || i1<0 || i2<0)
@@ -151,7 +172,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     // Combine for big 1d rep of 3d histogram;
     //int nhistbins = nbins;
     //int nhistbins2 = nhistbins*nhistbins;
-    int totbin = 18*25*i0 + 25*i1 + i2;
+    int totbin = 16*25*i0 + 25*i1 + i2;
 
     return totbin;
 }
@@ -205,7 +226,6 @@ int main(int argc, char **argv)
                 break;
             case 'l':
                 log_binning_flag = atoi(optarg);
-                printf("Will use log binning.\n");
                 break;
             case 's':
                 scale_factor = 206264.0; // To convert arcseconds to radians.
@@ -246,6 +266,8 @@ int main(int argc, char **argv)
         outfilename = defaultoutfilename;
         printf("Output filename is %s\n", outfilename);
     }
+
+    printf("Log binning flag: %d\n",log_binning_flag);
 
     float temp_lo = hist_lower_range;
     if (hist_upper_range == 0)
@@ -367,7 +389,7 @@ int main(int argc, char **argv)
     //int nbins;
     int log_binning=flag;
 
-    int size_hist = (60)*(18)*(25);
+    int size_hist = (60)*(16)*(25);
     int size_hist_bytes = size_hist*sizeof(unsigned long long);
 
     hist = (unsigned long long*)malloc(size_hist_bytes);
@@ -471,17 +493,17 @@ int main(int argc, char **argv)
 
     int index = 0;
     unsigned long long total = 0;
-    fprintf(outfile,"%d %d %d\n",60,18,25);
+    fprintf(outfile,"%d %d %d\n",60,16,25);
     for(int i = 0; i < 60; i++)
     {
         printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
-        for(int j = 0; j < 18; j++)
+        for(int j = 0; j < 16; j++)
         {
             for(int k = 0; k < 25; k++)
             {
 
-                index = (18)*(25)*i + (25)*j + k; 
+                index = (16)*(25)*i + (25)*j + k; 
                 printf("%lu ",hist[index]);
                 fprintf(outfile,"%lu ",hist[index]);
                 total += hist[index];
