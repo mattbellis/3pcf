@@ -119,7 +119,9 @@ def main():
     x,y,z = convert(ra,dec,zredshift)
 
     #print x,y,z
-    name = "flat_MICE_%dk.dat" % (ngals/1000)
+    # Give it a diffent name than ``production" files so we don't accidentlly 
+    # commit different versions of a 100k line text file to git.  :)
+    name = "test_flat_MICE_%dk.dat" % (ngals/1000)
     write_output_file(id,ra,dec,zredshift,x,y,z,name)
 
 
