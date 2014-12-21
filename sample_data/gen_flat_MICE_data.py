@@ -74,7 +74,11 @@ def convertRaDecMpcToXYZ(ra, dec, Mpc):
 def convert(ra, dec, z):
 
     ### Fit 2nd order polynomial to Redshift-Mpc relation (based on standard cosmology) and get fit function params.
-    p0, p1, p2 = getRedshiftMpcFit()
+    # This is what Debbie used.
+    #p0, p1, p2 = getRedshiftMpcFit()
+
+    # This is what I get from the MICE stuff.
+    p0,p1,p2 = -1.07199554e+00,3.01313296e+03,-6.38827998e+02
 
     ### convert redshift to Mpc
     zMpc = getMpcFromRedshift(z, p0, p1, p2)
@@ -121,7 +125,8 @@ def main():
     #print x,y,z
     # Give it a diffent name than ``production" files so we don't accidentlly 
     # commit different versions of a 100k line text file to git.  :)
-    name = "test_flat_MICE_%dk.dat" % (ngals/1000)
+    name = "flat_MICE_%dk.dat" % (ngals/1000)
+    #name = "test_flat_MICE_%dk.dat" % (ngals/1000)
     write_output_file(id,ra,dec,zredshift,x,y,z,name)
 
 

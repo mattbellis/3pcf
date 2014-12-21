@@ -96,5 +96,23 @@ plt.ylabel('zredshift')
 
 plt.tight_layout()
 
+################################################################################
+
+# This was to fit the r (Mpc vs. zredshift) function.
+'''
+plt.figure()
+plt.plot(zredshift,r,'o',markersize=1)
+params,cov = np.polyfit(zredshift,r,2,cov=True)
+print params
+print cov
+p0 = params[2]
+p1 = params[1]
+p2 = params[0]
+print "polynomial fit params: p0 =", p0, ", p1 =", p1, ", p2 =", p2
+'''
+
+
+
+
 
 plt.show()
