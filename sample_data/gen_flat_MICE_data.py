@@ -61,9 +61,15 @@ def convertRaDecMpcToXYZ(ra, dec, Mpc):
     x, y, z, = 0, 0, 0
     rad = math.pi/180.0
 
-    x = Mpc*np.sin(rad*(-1.0*dec+90))*np.cos(rad*(ra))
-    y = Mpc*np.sin(rad*(-1.0*dec+90))*np.sin(rad*(ra))
-    z = Mpc*np.cos(rad*(-1.0*dec+90))
+    # Debbie
+    #x = Mpc*np.sin(rad*(-1.0*dec+90))*np.cos(rad*(ra))
+    #y = Mpc*np.sin(rad*(-1.0*dec+90))*np.sin(rad*(ra))
+    #z = Mpc*np.cos(rad*(-1.0*dec+90))
+
+    # MICE?
+    x = Mpc*np.sin(rad*(90-dec))*np.sin(rad*(ra))
+    y = Mpc*np.sin(rad*(90-dec))*np.cos(rad*(ra))
+    z = Mpc*np.cos(rad*(90-dec))
 
     return x, y, z
 
@@ -100,11 +106,15 @@ def main():
 
     id = np.arange(0,ngals,1)
 
-    dec = np.random.random(ngals)
-    dec = np.arccos(dec)
-    dec = 90 - np.rad2deg(dec)
+    #dec = np.random.random(ngals)
+    #dec = np.arccos(dec)
+    #dec = 90 - np.rad2deg(dec)
+    dec = (1-0.9396926)*np.random.random(ngals) # for 20x20
+    dec = np.arccos(1-dec)
+    dec = 20 - np.rad2deg(dec)
 
-    ra = 90.*np.random.random(ngals)
+    #ra = 90.*np.random.random(ngals)
+    ra = 20.*np.random.random(ngals) # for 20x20
 
     ############################################################################
     # Gen flat in the cube of z to account for volume effect.
@@ -125,7 +135,7 @@ def main():
     #print x,y,z
     # Give it a diffent name than ``production" files so we don't accidentlly 
     # commit different versions of a 100k line text file to git.  :)
-    name = "flat_MICE_%dk.dat" % (ngals/1000)
+    name = "flat_MICE_20degx20deg_%dk.dat" % (ngals/1000)
     #name = "test_flat_MICE_%dk.dat" % (ngals/1000)
     write_output_file(id,ra,dec,zredshift,x,y,z,name)
 
