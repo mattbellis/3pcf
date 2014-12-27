@@ -14,7 +14,7 @@ infilename[2] = infilename[0].replace('DDD','DRR')
 infilename[3] = infilename[0].replace('DDD','RRR')
 
 sbin = int(sys.argv[2])
-qsbin = int(sys.argv[3])
+qsbin = np.array(sys.argv[3:]).astype('int')
 
 ddd = None
 ddr = None
@@ -93,18 +93,23 @@ tpcf[tpcf==np.inf] = 0
 #print tpcf
 #print tpcf[tpcf>0]
 
-plt.figure()
-plt.subplot(4,1,1)
-plt.plot(ddd[sbin][qsbin],'o')
-plt.subplot(4,1,2)
-plt.plot(ddr[sbin][qsbin],'o')
-plt.subplot(4,1,3)
-plt.plot(drr[sbin][qsbin],'o')
-plt.subplot(4,1,4)
-plt.plot(rrr[sbin][qsbin],'o')
+figall = plt.figure()
+figtpcf = plt.figure()
 
-plt.figure()
-plt.plot(tpcf[sbin][qsbin],'o')
+ax0 = figall.add_subplot(4,1,1)
+ax1 = figall.add_subplot(4,1,2)
+ax2 = figall.add_subplot(4,1,3)
+ax3 = figall.add_subplot(4,1,4)
+
+axtpcf = figtpcf.add_subplot(1,1,1)
+
+for qs in qsbin:
+    ax0.plot(ddd[sbin][qs],'o')
+    ax1.plot(ddr[sbin][qs],'o')
+    ax2.plot(drr[sbin][qs],'o')
+    ax3.plot(rrr[sbin][qs],'o')
+
+    axtpcf.plot(tpcf[sbin][qs],'o-')
 
 print "Sums: -----------"
 print ddd_norm
