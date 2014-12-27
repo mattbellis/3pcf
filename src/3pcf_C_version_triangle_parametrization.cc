@@ -9,6 +9,25 @@ using namespace std;
 #define HIST_MIN 0.0 // for degrees
 #define HIST_MAX 100.0 // for degrees
 
+#define PI 3.14159
+
+///////////////////////////////////////////////////////////////////////////////
+// Histogram information
+
+#define S_NBINS 60
+#define S_LO 0.
+#define S_HI 120.
+
+#define QS_NBINS 16
+#define QS_LO 0.9
+#define QS_HI 4.1
+
+#define THETA_NBINS 25
+#define THETA_LO 0.
+#define THETA_HI 1.
+
+///////////////////////////////////////////////////////////////////////////////
+
 //#define DEFAULT_NBINS 20 // for log binning
 //#define DEFAULT_NBINS 64 // for log binning
 #define DEFAULT_NBINS 16 // for log binning
@@ -53,7 +72,7 @@ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, int f
 }
 
 ////////////////////////////////////////////////////////////////////////
-int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2, float y2, float z2, float hist_min, float hist_max, int nbins, float bin_width, int flag)
+int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2, float y2, float z2, float hist_min, float hist_max, int nbins, float bin_width, int flag, int *totbins)
 {
 
     float xdiff = x0-x1;
@@ -84,7 +103,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     //printf("%f %f %f\n",y0,y1,y2);
     //printf("%f %f %f\n",z0,z1,z2);
     //printf("%f %f %f\n",dist0,dist1,dist2);
-    float s,qs,theta;
+    float s,qs,theta0,theta1,theta2;
 
     // Sort the distances
     //bool b0 = dist0<dist1;
@@ -100,7 +119,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
 
     // From Stackoverflow 
     // http://stackoverflow.com/questions/13040240/the-fastest-way-to-sort-3-values-java
-    /*
+    ///*
     // This is if we want to sort all 3.
     if( dist0 > dist1 ){
         if( dist0 > dist2 ){
@@ -138,43 +157,71 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
             shortest = dist0;
         }
     }
-    */
+    //*/
 
-    if(dist0<dist1)
+    /*
+       if(dist0<dist1)
+       {
+       shortest=dist0;
+       middle=dist1;
+       longest=dist2; // Not really longest, because we never tested for it. 
+       }
+       if(dist0>=dist1)
+       {
+       shortest=dist1;
+       middle=dist0;
+       longest=dist2; // Not really longest, because we never tested for it. 
+       }
+     */
+
+    int totbin = -999;
+
+    float shortest2 = shortest*shortest;
+    float middle2 = middle*middle;
+    float longest2 = longest*longest;
+    for (int k=0;k<3;k++)
     {
-        shortest=dist0;
-        middle=dist1;
-        longest=dist2; // Not really longest, because we never tested for it. 
+        if (k==0) {
+            s = shortest;
+            qs = middle/shortest;
+            theta0 = (acos((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
+            i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
+        } else if (k==1){
+            s = middle;
+            qs = longest/middle;
+            theta1 = (acos((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
+            i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
+        } else if (k==2){
+            s = shortest;
+            qs = longest/shortest;
+            //theta2 = (acos((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
+            theta2 = 1.0 - theta0 - theta1;
+            i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
+        }
+
+        //printf("%f %f %f\n",s,qs,theta);
+
+        i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,flag); //Mpc/h, delta s=0.2
+        i1 = distance_to_bin(qs,QS_LO,QS_HI,QS_NBINS,flag); // delta qs = 0.2
+        //i2 = distance_to_bin(theta,0,1.0,25,flag);
+
+        //printf("%d %d %d\n",i0,i1,i2);
+        if (i0<0 || i1<0 || i2<0)
+        {
+            totbin = -999;
+        } else {
+            // Combine for big 1d rep of 3d histogram;
+            //int nhistbins = nbins;
+            //int nhistbins2 = nhistbins*nhistbins;
+            totbin = QS_NBINS*THETA_NBINS*i0 + THETA_NBINS*i1 + i2;
+        }
+
+        totbins[k] = totbin;
+
     }
-    if(dist0>=dist1)
-    {
-        shortest=dist1;
-        middle=dist0;
-        longest=dist2; // Not really longest, because we never tested for it. 
-    }
 
-    s = shortest;
-    qs = middle/shortest;
-    theta = (acos((shortest*shortest + middle*middle - longest*longest)/(2*shortest*middle)))/3.14159;
-
-    //printf("%f %f %f\n",s,qs,theta);
-
-    i0 = distance_to_bin(s,0,120,60,flag); //Mpc/h, delta s=0.2
-    i1 = distance_to_bin(qs,0.9,4.1,16,flag); // delta qs = 0.2
-    i2 = distance_to_bin(theta,0,1.0,25,flag);
-
-    //printf("%d %d %d\n",i0,i1,i2);
-    if (i0<0 || i1<0 || i2<0)
-    {
-        return -999;
-    }
-
-    // Combine for big 1d rep of 3d histogram;
-    //int nhistbins = nbins;
-    //int nhistbins2 = nhistbins*nhistbins;
-    int totbin = 16*25*i0 + 25*i1 + i2;
-
-    return totbin;
+    //return totbin;
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -308,7 +355,6 @@ int main(int argc, char **argv)
         infile[i] = fopen(argv[optind+i],"r");
         printf("Opening input file %d: %s\n",i,argv[optind+i]);
     }
-    outfile = fopen(outfilename, "w");
 
     // Determine which combination of files we are doing.
     // 0 - all the same (DDD or RRR)
@@ -389,7 +435,7 @@ int main(int argc, char **argv)
     //int nbins;
     int log_binning=flag;
 
-    int size_hist = (60)*(16)*(25);
+    int size_hist = (S_NBINS)*(QS_NBINS)*(THETA_NBINS);
     int size_hist_bytes = size_hist*sizeof(unsigned long long);
 
     hist = (unsigned long long*)malloc(size_hist_bytes);
@@ -409,6 +455,7 @@ int main(int argc, char **argv)
     int calc_count_max = 100;
     int num_locked = 0;
     int num_not_locked = 0;
+    int bins[3] = {0,0,0};
     for(int i = 0; i < NUM_GALAXIES[0]; i++)
     {
         if (i%100==0)
@@ -426,7 +473,7 @@ int main(int argc, char **argv)
         else if (which_three_input_files==3) // DDR or RRD
             jmin = i+1;
         for(int j = jmin; j < NUM_GALAXIES[1]; j++)
-        //for(int j = 0; j < NUM_GALAXIES[1]; j++)
+            //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
             int kmin = 0;
             if (which_three_input_files==0)
@@ -438,7 +485,7 @@ int main(int argc, char **argv)
             else if (which_three_input_files==3)
                 kmin = 0;
             for(int k =kmin; k < NUM_GALAXIES[2]; k++)
-            //for(int k =0; k < NUM_GALAXIES[2]; k++)
+                //for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
                 //bool do_calc = 1;
                 //if (do_calc)
@@ -446,14 +493,18 @@ int main(int argc, char **argv)
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
                             h_x[2][k],h_y[2][k],h_z[2][k], \
-                            hist_min, hist_max, nbins, bin_width, flag);
+                            hist_min, hist_max, nbins, bin_width, flag, bins);
 
                     //printf("%d\n",bin_index);
-                    if (bin_index>=0)
+                    for (int b=0;b<3;b++)
                     {
-                        hist[bin_index]++;
-                        temp_hist[bin_index]++;
-                        calc_count += 1;
+                        bin_index = bins[b];
+                        if (bin_index>=0)
+                        {
+                            hist[bin_index]++;
+                            temp_hist[bin_index]++;
+                            calc_count += 1;
+                        }
                     }
                     /*
                        if (calc_count>calc_count_max)
@@ -493,17 +544,24 @@ int main(int argc, char **argv)
 
     int index = 0;
     unsigned long long total = 0;
-    fprintf(outfile,"%d %d %d\n",60,16,25);
-    for(int i = 0; i < 60; i++)
+    outfile = fopen(outfilename, "w");
+    fprintf(outfile,"%d\n",NUM_GALAXIES[0]);
+    fprintf(outfile,"%d\n",NUM_GALAXIES[1]);
+    fprintf(outfile,"%d\n",NUM_GALAXIES[2]);
+    fprintf(outfile,"%d %d %d\n",S_NBINS,QS_NBINS,THETA_NBINS);
+    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",S_LO,S_HI,(S_HI-S_LO)/S_NBINS);
+    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",QS_LO,QS_HI,(QS_HI-QS_LO)/QS_NBINS);
+    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",THETA_LO,THETA_HI,(THETA_HI-THETA_LO)/THETA_NBINS);
+    for(int i = 0; i < S_NBINS; i++)
     {
         printf("%d --------------\n",i);
-        fprintf(outfile,"%d\n",i);
-        for(int j = 0; j < 16; j++)
+        //fprintf(outfile,"%d\n",i);
+        for(int j = 0; j < QS_NBINS; j++)
         {
-            for(int k = 0; k < 25; k++)
+            for(int k = 0; k < THETA_NBINS; k++)
             {
 
-                index = (16)*(25)*i + (25)*j + k; 
+                index = (QS_NBINS)*(THETA_NBINS)*i + (THETA_NBINS)*j + k; 
                 printf("%lu ",hist[index]);
                 fprintf(outfile,"%lu ",hist[index]);
                 total += hist[index];
