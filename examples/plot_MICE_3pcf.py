@@ -14,7 +14,7 @@ infilename[2] = infilename[0].replace('DDD','DRR')
 infilename[3] = infilename[0].replace('DDD','RRR')
 
 sbin = int(sys.argv[2])
-qsbin = int(sys.argv[3])
+qsbin = np.array(sys.argv[3:]).astype('int')
 
 ddd = None
 ddr = None
@@ -93,18 +93,47 @@ tpcf[tpcf==np.inf] = 0
 #print tpcf
 #print tpcf[tpcf>0]
 
-plt.figure()
-plt.subplot(4,1,1)
-plt.plot(ddd[sbin][qsbin],'o')
-plt.subplot(4,1,2)
-plt.plot(ddr[sbin][qsbin],'o')
-plt.subplot(4,1,3)
-plt.plot(drr[sbin][qsbin],'o')
-plt.subplot(4,1,4)
-plt.plot(rrr[sbin][qsbin],'o')
+figall = plt.figure()
+figtpcf = plt.figure()
 
-plt.figure()
-plt.plot(tpcf[sbin][qsbin],'o')
+ax0 = figall.add_subplot(4,1,1)
+ax1 = figall.add_subplot(4,1,2)
+ax2 = figall.add_subplot(4,1,3)
+ax3 = figall.add_subplot(4,1,4)
+
+lo = histvals[0][0]
+hi = histvals[0][1]
+width = histvals[0][2]
+title = "s=%4.1f-%4.1f Mpc" % (sbin*width+lo,(sbin+1)*width+lo)
+
+axtpcf = figtpcf.add_subplot(1,1,1)
+axtpcf.set_title(title)
+
+lo = histvals[2][0]
+hi = histvals[2][1]
+width = histvals[2][2]
+x = np.arange(lo,hi,width)
+
+print x
+
+for qs in qsbin:
+    ax0.plot(x,ddd[sbin][qs],'o')
+    ax1.plot(x,ddr[sbin][qs],'o')
+    ax2.plot(x,drr[sbin][qs],'o')
+    ax3.plot(x,rrr[sbin][qs],'o')
+
+
+    lo = histvals[1][0]
+    hi = histvals[1][1]
+    width = histvals[1][2]
+    label = "qs=%3.1f-%3.1f" % (qs*width+lo,(qs+1)*width+lo)
+    axtpcf.plot(x,tpcf[sbin][qs],'o-',label=label)
+
+    plt.xlabel(r'$\theta/\pi$',fontsize=24)
+    plt.xlim(0,1.5)
+
+plt.legend()
+plt.tight_layout()
 
 print "Sums: -----------"
 print ddd_norm

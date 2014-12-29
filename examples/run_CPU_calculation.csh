@@ -24,7 +24,6 @@ set input0 = '../sample_data/MICE_20degx20deg_'$ngals'k_randomized.dat'
 set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
 
 
-
 ################################################################################
 # Read in data.
 # Even-spaced binning (-l 0)

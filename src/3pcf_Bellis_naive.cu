@@ -9,9 +9,9 @@
 using namespace std;
 
 //#define SUBMATRIX_SIZE 16384
-//#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
-#define SUBMATRIX_SIZE 1024
+//#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
 //#define SUBMATRIX_SIZE 256
 //#define SUBMATRIX_SIZE 128
@@ -316,12 +316,13 @@ __global__ void distance(
 
                     // THIS SEEMS TO WORK HERE!!!!!!
                     //if (j>idx+1 && k>j+1 && idx<max_xind)
-                    if (totbin>=0 && totbin<tot_hist_size)
+                    //if (totbin>=0 && totbin<tot_hist_size)
+                    if (totbin==20)
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
-                        shared_hist[totbin]++;
-                        //atomicAdd(&shared_hist[totbin],1);
+                        //shared_hist[totbin]++;
+                        atomicAdd(&shared_hist[totbin],1);
                     }
 
             }
@@ -524,8 +525,8 @@ int main(int argc, char **argv)
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
     //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    //grid.x = 32; // Is this the number of blocks?
-    grid.x = 8; // Is this the number of blocks?
+    grid.x = 32; // Is this the number of blocks?
+    //grid.x = 8; // Is this the number of blocks?
     //grid.x = 4; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;

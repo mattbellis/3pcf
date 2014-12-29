@@ -2,7 +2,8 @@
 
 set BIN_DIR = '../bin/'
 #set executable = $BIN_DIR/'3pcf_Bellis'
-set executable = $BIN_DIR/'3pcf_Bellis_naive'
+set executable = $BIN_DIR/'3pcf_Bellis_basically_1D'
+#set executable = $BIN_DIR/'3pcf_Bellis_naive'
 #set executable = $BIN_DIR/'3pcf_Bellis_2D_histo_on_GPU'
 #set executable = $BIN_DIR/'3pcf_Bellis_totes_different'
 
