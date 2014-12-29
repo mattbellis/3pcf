@@ -14,9 +14,24 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////
 // Histogram information
 
+/*
 #define S_NBINS 60
 #define S_LO 0.
 #define S_HI 120.
+
+#define QS_NBINS 16
+#define QS_LO 0.9
+#define QS_HI 4.1
+
+#define THETA_NBINS 25
+#define THETA_LO 0.
+#define THETA_HI 1.
+*/
+
+//////////////////////////
+#define S_NBINS 50
+#define S_LO 2.0
+#define S_HI 12.0
 
 #define QS_NBINS 16
 #define QS_LO 0.9
