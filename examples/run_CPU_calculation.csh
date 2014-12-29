@@ -18,8 +18,8 @@ endif
 #set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 #set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
 #set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
-set input0 = '../sample_data/MICE_'$ngals'k_randomized.dat'
-set input1 = '../sample_data/MICE_'$ngals'k_randomized.dat'
+set input0 = '../sample_data/MICE_20degx20deg_'$ngals'k_randomized.dat'
+set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
 
 
 ################################################################################
@@ -30,7 +30,7 @@ set input1 = '../sample_data/MICE_'$ngals'k_randomized.dat'
 ################################################################################
 #set global_params = '-w 0.01 -L 0.00 -l 0'
 set global_params = '-L 0.00 -l 0'
-set tag = 'evenbinning_CPU'
+set tag = 'evenbinning_CPU_20degx20deg'
 
 ################################################################################
 # Read in data.
