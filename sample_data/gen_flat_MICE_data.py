@@ -109,12 +109,19 @@ def main():
     #dec = np.random.random(ngals)
     #dec = np.arccos(dec)
     #dec = 90 - np.rad2deg(dec)
-    dec = (1-0.9396926)*np.random.random(ngals) # for 20x20
-    dec = np.arccos(1-dec)
-    dec = 20 - np.rad2deg(dec)
+    #dec = (1-0.9396926)*np.random.random(ngals) # for 20x20
+    #dec = np.arccos(1-dec)
+    #dec = 20 - np.rad2deg(dec)
+    dec = (np.cos(np.deg2rad(70)))*np.random.random(ngals) # for 20x20
+    dec = np.arccos(dec)
+    dec = np.rad2deg(dec)-70
+    #dec = (np.cos(np.deg2rad(85)))*np.random.random(ngals) # for 5x5
+    #dec = np.arccos(dec)
+    #dec = np.rad2deg(dec)-85
 
     #ra = 90.*np.random.random(ngals)
     ra = 20.*np.random.random(ngals) # for 20x20
+    #ra = 5.*np.random.random(ngals) # for 5x5
 
     ############################################################################
     # Gen flat in the cube of z to account for volume effect.
@@ -136,6 +143,7 @@ def main():
     # Give it a diffent name than ``production" files so we don't accidentlly 
     # commit different versions of a 100k line text file to git.  :)
     name = "flat_MICE_20degx20deg_%dk.dat" % (ngals/1000)
+    #name = "flat_MICE_5degx5deg_%dk.dat" % (ngals/1000)
     #name = "test_flat_MICE_%dk.dat" % (ngals/1000)
     write_output_file(id,ra,dec,zredshift,x,y,z,name)
 
