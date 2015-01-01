@@ -49,16 +49,16 @@ for fcount,f in enumerate(infilename):
 
     if fcount==0:
         ddd = pts.copy()
-        ddd_norm =  float(ngals[0]*(ngals[1]-1)*(ngals[2]-2))/6
+        ddd_norm =  float(ngals[0]*(ngals[1]-1)*(ngals[2]-2))/6.
     elif fcount==1:
         ddr = pts.copy()
-        ddr_norm =  float(ngals[0]*(ngals[1]-1)*ngals[2])/2
+        ddr_norm =  float(ngals[0]*(ngals[1]-1)*ngals[2])/2.
     elif fcount==2:
         drr = pts.copy()
-        drr_norm =  float(ngals[0]*ngals[1]*(ngals[2]-1))/2
+        drr_norm =  float(ngals[0]*ngals[1]*(ngals[2]-1))/2.
     elif fcount==3:
         rrr = pts.copy()
-        rrr_norm =  float(ngals[0]*(ngals[1]-1)*(ngals[2]-2))/6
+        rrr_norm =  float(ngals[0]*(ngals[1]-1)*(ngals[2]-2))/6.
 
 
 # Only wory about entries greater than 1000
