@@ -113,11 +113,14 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
     if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
 
-    //printf("---------\n");
-    //printf("%f %f %f\n",x0,x1,x2);
-    //printf("%f %f %f\n",y0,y1,y2);
-    //printf("%f %f %f\n",z0,z1,z2);
-    //printf("%f %f %f\n",dist0,dist1,dist2);
+    /*
+    printf("---------\n");
+    printf("%f %f %f\n",x0,x1,x2);
+    printf("%f %f %f\n",y0,y1,y2);
+    printf("%f %f %f\n",z0,z1,z2);
+    printf("%f %f %f\n",dist0,dist1,dist2);
+    */
+
     float s,qs,theta0,theta1,theta2;
 
     // Sort the distances
@@ -361,6 +364,7 @@ int main(int argc, char **argv)
     }
     printf("hist_upper_range: %f\n",hist_upper_range);
 
+    float *htemp_x[3], *htemp_y[3], *htemp_z[3];
     float *h_x[3], *h_y[3], *h_z[3];
 
     // Open the input files and the output file.
@@ -415,26 +419,26 @@ int main(int argc, char **argv)
         //size_of_galaxy_array[i] = NUM_GALAXIES[i] * sizeof(float);    
         //printf("SIZE %d # GALAXIES: %d\n",i,NUM_GALAXIES[i]);
 
-        h_x[i] = (float*)malloc(max_ngals);
-        h_y[i] = (float*)malloc(max_ngals);
-        h_z[i] = (float*)malloc(max_ngals);
+        htemp_x[i] = (float*)malloc(max_ngals);
+        htemp_y[i] = (float*)malloc(max_ngals);
+        htemp_z[i] = (float*)malloc(max_ngals);
 
         int j = 0;
         while(fscanf(infile[i], "%d %f %f %f %f %f %f", &idummy, &dummy, &dummy, &dummy, &temp0, &temp1, &temp2) != EOF)
         {
-            h_x[i][j] = temp0;///scale_factor;
-            h_y[i][j] = temp1;///scale_factor;
-            h_z[i][j] = temp2;///scale_factor;
+            htemp_x[i][j] = temp0;///scale_factor;
+            htemp_y[i][j] = temp1;///scale_factor;
+            htemp_z[i][j] = temp2;///scale_factor;
             if (NUM_GALAXIES[i]>=max_ngals)
             {
                 printf("Exceeded max num galaxies");
                 exit(-1);
             }
             ///*
-            if (j<10)
-            {
-                printf("%f %f %f\n", h_x[i][j],h_y[i][j],h_z[i][j]);
-            }
+            //if (j<10)
+            //{
+                //printf("%f %f %f\n", htemp_x[i][j],htemp_y[i][j],htemp_z[i][j]);
+            //}
             //*/
             NUM_GALAXIES[i] += 1;
             j += 1;
@@ -442,22 +446,62 @@ int main(int argc, char **argv)
     }
 
     ////////////////////////////////////////////////////////////////////////////
+    // Allocation the arrays of galaxies that we actually want to run over.
+    ///////////////////////////////////////////////////////////////////////////
+
+    int min_gals[3] = {0,0,0};
+    //int ngals[3] = {max_gals[0]-min_gals[0],max_gals[1]-min_gals[1],max_gals[2]-min_gals[2]};
+    int ngals[3] = {10,10,10};
+    int max_gals[3] = {min_gals[0]+ngals[0],min_gals[1]+ngals[1],min_gals[2]+ngals[2]};
+
+    for (int i=0;i<3;i++)
+    {
+        //h_x[i] = (float*)malloc(ngals[i]);
+        //h_y[i] = (float*)malloc(ngals[i]);
+        //h_z[i] = (float*)malloc(ngals[i]);
+
+        h_x[i] = (float*)malloc(ngals[i]);
+        h_y[i] = (float*)malloc(ngals[i]);
+        h_z[i] = (float*)malloc(1000);
+
+        for(int j=min_gals[i];j<max_gals[i];j++)
+        {
+            h_x[i][j] = htemp_x[i][j];
+            h_y[i][j] = htemp_y[i][j];
+            h_z[i][j] = htemp_z[i][j];
+
+            if (j<10)
+            {
+                printf("%d %f %f %f\n",j,h_x[i][j],h_y[i][j],h_z[i][j]);
+            }
+        }
+    }
+
+    printf("Finished filling the real galaxy arrays....\n");
+
+    ////////////////////////////////////////////////////////////////////////////
     // Allocation of histograms.
     ///////////////////////////////////////////////////////////////////////////
 
-    unsigned long long *hist;
-    unsigned long long *temp_hist;
+    unsigned int *hist;
+    unsigned int *temp_hist;
     //int nbins;
     int log_binning=flag;
 
     int size_hist = (S_NBINS)*(QS_NBINS)*(THETA_NBINS);
-    int size_hist_bytes = size_hist*sizeof(unsigned long long);
+    int size_hist_bytes = size_hist*sizeof(unsigned int);
 
-    hist = (unsigned long long*)malloc(size_hist_bytes);
+    printf("Malloc..\n");
+    hist = (unsigned int*)malloc(size_hist_bytes);
+    printf("Malloc'ed..\n");
     memset(hist, 0, size_hist_bytes);
 
-    temp_hist = (unsigned long long*)malloc(size_hist_bytes);
+
+    printf("Malloc..\n");
+    temp_hist = (unsigned int*)malloc(size_hist_bytes);
+    printf("Malloc'ed..\n");
     memset(temp_hist, 0, size_hist_bytes);
+
 
     int x, y;
     float dist = 0;
@@ -471,14 +515,45 @@ int main(int argc, char **argv)
     int num_locked = 0;
     int num_not_locked = 0;
     int bins[3] = {0,0,0};
-    for(int i = 0; i < NUM_GALAXIES[0]; i++)
+
+    int min_index[3] = {0,0,0};
+    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
+    int max_index[3] = {ngals[0],ngals[1],ngals[2]};
+
+    //int min_index[3] = {0,0,0};
+    //int max_index[3] = {500,500,500};
+
+    //int min_index[3] = {500,0,0};
+    //int max_index[3] = {NUM_GALAXIES[0],500,500};
+
+    //int min_index[3] = {500,500,0};
+    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],500};
+
+    //int min_index[3] = {500,500,500};
+    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
+
+    //int min_index[3] = {500,0,500};
+    //int max_index[3] = {NUM_GALAXIES[0],500,NUM_GALAXIES[2]};
+
+    //int min_index[3] = {0,0,500};
+    //int max_index[3] = {500,500,NUM_GALAXIES[2]};
+
+    //int min_index[3] = {0,500,500};
+    //int max_index[3] = {500,NUM_GALAXIES[1],NUM_GALAXIES[2]};
+
+    //int min_index[3] = {0,500,0};
+    //int max_index[3] = {500,NUM_GALAXIES[1],500};
+
+    printf("About to enter the loops...\n");
+
+    for(int i=min_index[0];i<max_index[0]; i++)
     {
         if (i%100==0)
         {
             printf("%d\n",i);
             fflush(stdout); 
         }
-        int jmin = 0;
+        int jmin = min_index[1];
         if (which_three_input_files==0) // DDD or RRR
             jmin = i+1;
         else if (which_three_input_files==1) // DRR or RDD
@@ -487,10 +562,10 @@ int main(int argc, char **argv)
             jmin = 0;
         else if (which_three_input_files==3) // DDR or RRD
             jmin = i+1;
-        for(int j = jmin; j < NUM_GALAXIES[1]; j++)
+        for(int j=jmin;j<max_index[1];j++)
             //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
-            int kmin = 0;
+            int kmin = min_index[2];
             if (which_three_input_files==0)
                 kmin = j+1;
             else if (which_three_input_files==1)
@@ -499,18 +574,25 @@ int main(int argc, char **argv)
                 kmin = i+1;
             else if (which_three_input_files==3)
                 kmin = 0;
-            for(int k =kmin; k < NUM_GALAXIES[2]; k++)
+            for(int k=kmin;k<max_index[2];k++)
                 //for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
+                    /*
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
                             h_x[2][k],h_y[2][k],h_z[2][k], \
                             hist_min, hist_max, nbins, bin_width, flag, bins);
+                            */
 
-                    //printf("%d\n",bin_index);
+                    bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
+                            htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
+                            htemp_x[2][k],htemp_y[2][k],htemp_z[2][k], \
+                            hist_min, hist_max, nbins, bin_width, flag, bins);
+
+                    //printf("bin_index: %d\n",bin_index);
                     for (int b=0;b<3;b++)
                     {
                         bin_index = bins[b];
