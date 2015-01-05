@@ -34,7 +34,8 @@ set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 set global_params = '-L 0.00 -l 0'
 #set tag = 'evenbinning_CPU_20degx20deg'
 #set tag = 'evenbinning_CPU_5degx5deg'
-set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
+#set tag = 'TESTING_BREAKDOWN_010_evenbinning_CPU_5degx5deg_LRG_binning'
+set tag = 'TESTING_BREAKDOWN_DIFFERENT_000_evenbinning_CPU_5degx5deg_LRG_binning'
 
 ################################################################################
 # Read in data.
