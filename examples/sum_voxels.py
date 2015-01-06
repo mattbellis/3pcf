@@ -34,10 +34,10 @@ for fcount,f in enumerate(infilenames):
 
     #pts = pts.reshape((nbins[0],nbins[1],nbins[2]))
 
-print totpts
+#print totpts
 totpts = totpts.reshape((nbins[0],nbins[1],nbins[2]))
-for t in totpts:
-    print t
+#for t in totpts:
+    #print t
 
 output = ""
 for n in ngals:

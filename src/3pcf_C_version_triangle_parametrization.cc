@@ -648,17 +648,15 @@ int main(int argc, char **argv)
                 //bool do_calc = 1;
                 //if (do_calc)
                 {
-                    /*
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
                             h_x[2][k],h_y[2][k],h_z[2][k], \
                             hist_min, hist_max, nbins, bin_width, flag, bins);
-                            */
 
-                    bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
-                            htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
-                            htemp_x[2][k],htemp_y[2][k],htemp_z[2][k], \
-                            hist_min, hist_max, nbins, bin_width, flag, bins);
+                    //bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
+                            //htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
+                            //htemp_x[2][k],htemp_y[2][k],htemp_z[2][k], \
+                            //hist_min, hist_max, nbins, bin_width, flag, bins);
 
                     //printf("bin_index: %d\n",bin_index);
                     for (int b=0;b<3;b++)
