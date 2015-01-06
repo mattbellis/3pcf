@@ -55,6 +55,39 @@ using namespace std;
 float max_dist = 0.0;
 float min_dist = 999.0;
 
+///////////////////////////////////////////////////////////////////////////////
+void vox2gal(int voxel_division,int voxel_index,int ngals,int *gal_indices)
+{
+    int ngals_in_voxel = ngals/voxel_division;
+    printf("ngals: %d\n",ngals);
+    printf("ngals_in_voxel: %d\n",ngals_in_voxel);
+    printf("voxel_index: %d\n",voxel_index);
+
+    if (ngals_in_voxel==0)
+    {
+        printf("Voxel chunks are bigger than the number of galaxies!");
+        exit(-1);
+    }
+
+    int lo = ngals_in_voxel*voxel_index;
+    int hi = ngals_in_voxel*(voxel_index+1);
+
+    printf("lo/hi: %d %d\n",lo,hi);
+
+    if (voxel_index==voxel_division-1)
+    {
+        hi += ngals%voxel_division; // To account for any excess, if it is not an even division.
+    }
+
+    printf("lo/hi: %d %d\n",lo,hi);
+
+    gal_indices[0] = lo;
+    gal_indices[1] = hi;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, int flag)
 {
     int bin_index = 0;
@@ -105,13 +138,13 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     zdiff = z1-z2;
     float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
-    if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
-    if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
+    //if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
+    //if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
+    //if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
 
-    if (dist0<min_dist) { min_dist = dist0; printf("min_dist: %f\n",min_dist); }
-    if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
-    if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
+    //if (dist0<min_dist) { min_dist = dist0; printf("min_dist: %f\n",min_dist); }
+    //if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
+    //if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
 
     /*
     printf("---------\n");
@@ -274,12 +307,14 @@ int main(int argc, char **argv)
     int nbins = DEFAULT_NBINS;
     float bin_width = (hist_max-hist_min)/nbins;
     int flag = 0;
+    int voxel_division = -999;
+    int voxel_index[3] = {0,0,0};
+    int vtemp = -999;
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
-
-    while ((c = getopt(argc, argv, "ao:L:l:w:sm")) != -1) {
+    while ((c = getopt(argc, argv, "ao:L:l:w:smx:X:")) != -1) {
         switch(c) {
             case 'L':
                 printf("L is set\n");
@@ -310,6 +345,13 @@ int main(int argc, char **argv)
                 outfilename = optarg;
                 printf("Output filename is %s\n", outfilename);
                 break;
+            case 'X':
+                voxel_division = atoi(optarg);
+                printf("Voxel division is %d\n", voxel_division);
+                break;
+            case 'x':
+                vtemp = atoi(optarg);
+                break;
             case '?':
                 printf("unknown arg %c\n", optopt);
                 break;
@@ -330,6 +372,15 @@ int main(int argc, char **argv)
     {
         outfilename = defaultoutfilename;
         printf("Output filename is %s\n", outfilename);
+    }
+
+    if(voxel_division>0)
+    {
+        voxel_index[0] = vtemp/1000000;
+        voxel_index[1] = (vtemp/1000)%1000;
+        voxel_index[2] = (vtemp%1000);
+        printf("vtemp: %d\n",vtemp);
+        printf("Voxel indices are %03d %03d %03d\n",voxel_index[0],voxel_index[1],voxel_index[2]);
     }
 
     printf("Log binning flag: %d\n",log_binning_flag);
@@ -419,9 +470,9 @@ int main(int argc, char **argv)
         //size_of_galaxy_array[i] = NUM_GALAXIES[i] * sizeof(float);    
         //printf("SIZE %d # GALAXIES: %d\n",i,NUM_GALAXIES[i]);
 
-        htemp_x[i] = (float*)malloc(max_ngals);
-        htemp_y[i] = (float*)malloc(max_ngals);
-        htemp_z[i] = (float*)malloc(max_ngals);
+        htemp_x[i] = (float*)malloc(max_ngals*sizeof(float));
+        htemp_y[i] = (float*)malloc(max_ngals*sizeof(float));
+        htemp_z[i] = (float*)malloc(max_ngals*sizeof(float));
 
         int j = 0;
         while(fscanf(infile[i], "%d %f %f %f %f %f %f", &idummy, &dummy, &dummy, &dummy, &temp0, &temp1, &temp2) != EOF)
@@ -449,31 +500,54 @@ int main(int argc, char **argv)
     // Allocation the arrays of galaxies that we actually want to run over.
     ///////////////////////////////////////////////////////////////////////////
 
+    //int min_gals[3] = {0,0,0};
+    //int ngals[3] = {500,500,500};
+    //int max_gals[3] = {min_gals[0]+ngals[0],min_gals[1]+ngals[1],min_gals[2]+ngals[2]};
     int min_gals[3] = {0,0,0};
-    //int ngals[3] = {max_gals[0]-min_gals[0],max_gals[1]-min_gals[1],max_gals[2]-min_gals[2]};
-    int ngals[3] = {10,10,10};
-    int max_gals[3] = {min_gals[0]+ngals[0],min_gals[1]+ngals[1],min_gals[2]+ngals[2]};
+    int max_gals[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
+    int ngals[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
+    int lohi[2] = {0,0};
+
+    if (voxel_division>0 && vtemp>=0)
+    {
+        for (int i=0;i<3;i++)
+        {
+            vox2gal(voxel_division,voxel_index[i],NUM_GALAXIES[i],lohi);
+            min_gals[i] = lohi[0];
+            max_gals[i] = lohi[1];
+            ngals[i] = max_gals[i]-min_gals[i];
+        }
+    }
 
     for (int i=0;i<3;i++)
     {
-        //h_x[i] = (float*)malloc(ngals[i]);
-        //h_y[i] = (float*)malloc(ngals[i]);
-        //h_z[i] = (float*)malloc(ngals[i]);
+        printf("Galaxy indices: %d %d %d\n",min_gals[i],max_gals[i],ngals[i]);
+        h_x[i] = (float*)malloc(ngals[i]*sizeof(float));
+        h_y[i] = (float*)malloc(ngals[i]*sizeof(float));
+        h_z[i] = (float*)malloc(ngals[i]*sizeof(float));
 
-        h_x[i] = (float*)malloc(ngals[i]);
-        h_y[i] = (float*)malloc(ngals[i]);
-        h_z[i] = (float*)malloc(1000);
+        //printf("ngals[%d] %d\n",i,ngals[i]);
+        //h_x[i] = (float*)malloc(1000);
+        //h_y[i] = (float*)malloc(1000);
+        //h_z[i] = (float*)malloc(1000);
 
+        int index = 0;
         for(int j=min_gals[i];j<max_gals[i];j++)
         {
-            h_x[i][j] = htemp_x[i][j];
-            h_y[i][j] = htemp_y[i][j];
-            h_z[i][j] = htemp_z[i][j];
+            h_x[i][index] = htemp_x[i][j];
+            h_y[i][index] = htemp_y[i][j];
+            h_z[i][index] = htemp_z[i][j];
 
-            if (j<10)
+            //printf("indices: %d %d\n",i,index);
+            //h_x[i][index] = 0.0;
+            //h_y[i][index] = 0.0;
+            //h_z[i][index] = 0.0;
+
+            if (index<10)
             {
-                printf("%d %f %f %f\n",j,h_x[i][j],h_y[i][j],h_z[i][j]);
+                printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
             }
+            index++;
         }
     }
 
@@ -491,17 +565,11 @@ int main(int argc, char **argv)
     int size_hist = (S_NBINS)*(QS_NBINS)*(THETA_NBINS);
     int size_hist_bytes = size_hist*sizeof(unsigned int);
 
-    printf("Malloc..\n");
     hist = (unsigned int*)malloc(size_hist_bytes);
-    printf("Malloc'ed..\n");
     memset(hist, 0, size_hist_bytes);
 
-
-    printf("Malloc..\n");
     temp_hist = (unsigned int*)malloc(size_hist_bytes);
-    printf("Malloc'ed..\n");
     memset(temp_hist, 0, size_hist_bytes);
-
 
     int x, y;
     float dist = 0;
