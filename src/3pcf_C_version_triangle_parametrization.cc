@@ -268,11 +268,11 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         }
 
         totbins[k] = totbin;
-        //if (dist0==0 || dist1==0 || dist2==0)
-        //{
-            ////printf("dists: %f %f %f\n",dist0,dist1,dist2);
-            //totbins[k] = -999;
-        //}
+        if (dist0==0 || dist1==0 || dist2==0)
+        {
+            //printf("dists: %f %f %f\n",dist0,dist1,dist2);
+            totbins[k] = -999;
+        }
 
     }
 
@@ -547,7 +547,7 @@ int main(int argc, char **argv)
             //h_y[i][index] = 0.0;
             //h_z[i][index] = 0.0;
 
-            if (index<10)
+            if (index<10 || index>570)
             {
                 printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
             }
@@ -578,14 +578,11 @@ int main(int argc, char **argv)
     int x, y;
     float dist = 0;
 
-    unsigned long long int fake_tot = 0;
 
     bool locked = false;
     int bin_index = 0;
     int calc_count = 0;
     int calc_count_max = 100;
-    int num_locked = 0;
-    int num_not_locked = 0;
     int bins[3] = {0,0,0};
 
     int min_index[3] = {0,0,0};
@@ -640,7 +637,8 @@ int main(int argc, char **argv)
         {
             int kmin = min_index[2];
             if (which_three_input_files==0)
-                kmin = j+1;
+                //kmin = j+1;
+                kmin = j;
             else if (which_three_input_files==1)
                 //kmin = j+1;
                 kmin = j;
@@ -652,9 +650,8 @@ int main(int argc, char **argv)
             for(int k=kmin;k<max_index[2];k++)
                 //for(int k =0; k < NUM_GALAXIES[2]; k++)
             {
-                //bool do_calc = 1;
-                //if (do_calc)
-                {
+
+                //printf("%d ",k);
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
                             h_x[2][k],h_y[2][k],h_z[2][k], \
@@ -676,39 +673,9 @@ int main(int argc, char **argv)
                             calc_count += 1;
                         }
                     }
-                    /*
-                       if (calc_count>calc_count_max)
-                       {
-                       for(int i=0;i<size_hist;i++)
-                       {
-                       if(temp_hist[i]>1)
-                       {
-                       printf("%d %d %d   ",calc_count,i,temp_hist[i]);
-                       locked = true;
-                       }
-                       }
-                       printf("--------\n");
-
-                       if (locked)
-                       num_locked++;
-                       else
-                       num_not_locked++;
-
-                       memset(temp_hist, 0, size_hist_bytes);
-                       calc_count = 0;
-                       locked = false;
-                       }
-                     */
-                }
-                //*/
-                fake_tot += 1;
             }
         }
     }  
-
-    //printf("Num locked: %llu\n",num_locked);
-    //printf("Num not locked: %llu\n",num_not_locked);
-    //printf("Fake tot: %llu\n",fake_tot);
 
     //exit(0);
 
