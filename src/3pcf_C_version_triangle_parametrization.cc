@@ -624,22 +624,27 @@ int main(int argc, char **argv)
         int jmin = min_index[1];
         if (which_three_input_files==0) // DDD or RRR
             jmin = i+1;
+            //jmin = i;
         else if (which_three_input_files==1) // DRR or RDD
             jmin = 0;
         else if (which_three_input_files==2) // DRD or RDR
             jmin = 0;
         else if (which_three_input_files==3) // DDR or RRD
             jmin = i+1;
+            //jmin = i;
         for(int j=jmin;j<max_index[1];j++)
             //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
             int kmin = min_index[2];
             if (which_three_input_files==0)
                 kmin = j+1;
+                //kmin = j;
             else if (which_three_input_files==1)
                 kmin = j+1;
+                //kmin = j;
             else if (which_three_input_files==2)
                 kmin = i+1;
+                //kmin = i;
             else if (which_three_input_files==3)
                 kmin = 0;
             for(int k=kmin;k<max_index[2];k++)
