@@ -137,7 +137,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     ydiff = y1-y2;
     zdiff = z1-z2;
     float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-
+    
     //if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
     //if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
     //if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
@@ -268,6 +268,11 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         }
 
         totbins[k] = totbin;
+        //if (dist0==0 || dist1==0 || dist2==0)
+        //{
+            ////printf("dists: %f %f %f\n",dist0,dist1,dist2);
+            //totbins[k] = -999;
+        //}
 
     }
 
@@ -360,7 +365,6 @@ int main(int argc, char **argv)
 
     if (argc < 3)
     {
-
         printf("\nMust pass in at least three input files on command line!\n");
         printf("\nUsage: ", argv[0] );
         exit(1);
@@ -623,28 +627,26 @@ int main(int argc, char **argv)
         }
         int jmin = min_index[1];
         if (which_three_input_files==0) // DDD or RRR
-            jmin = i+1;
-            //jmin = i;
+            //jmin = i+1;
+            jmin = i;
         else if (which_three_input_files==1) // DRR or RDD
             jmin = 0;
         else if (which_three_input_files==2) // DRD or RDR
             jmin = 0;
         else if (which_three_input_files==3) // DDR or RRD
-            jmin = i+1;
-            //jmin = i;
+            jmin = i;
         for(int j=jmin;j<max_index[1];j++)
             //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
             int kmin = min_index[2];
             if (which_three_input_files==0)
                 kmin = j+1;
-                //kmin = j;
             else if (which_three_input_files==1)
-                kmin = j+1;
-                //kmin = j;
+                //kmin = j+1;
+                kmin = j;
             else if (which_three_input_files==2)
-                kmin = i+1;
-                //kmin = i;
+                //kmin = i+1;
+                kmin = i;
             else if (which_three_input_files==3)
                 kmin = 0;
             for(int k=kmin;k<max_index[2];k++)
