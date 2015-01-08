@@ -257,7 +257,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         //i2 = distance_to_bin(theta,0,1.0,25,flag);
 
         //printf("%d %d %d\n",i0,i1,i2);
-        if (i0<=0 || i1<=0 || i2<=0)
+        if (i0<0 || i1<0 || i2<0)
         {
             totbin = -999;
         } else {
