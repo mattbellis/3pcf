@@ -34,7 +34,7 @@ LIBS              += -L$(CUDA_INSTALL_PATH)/lib64
 
 LDFLAGS := -lcudart
 
-COMMONFLAGS       := -m64 
+COMMONFLAGS       := -m64  
 OBJ_DIR           := ./objects/
 CXXFLAGS          := $(COMMONFLAGS)
 
@@ -98,7 +98,7 @@ $(OBJ_DIR)/3pcf_Bellis_2D_histo_on_GPU.cu_o : 3pcf_Bellis_2D_histo_on_GPU.cu
 3pcf_C_version_triangle_parametrization : 3pcf_C_version_triangle_parametrization.cc
 	mkdir -p $(INSTALL_DIR)
 	#$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
-	$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc 
+	$(CC) -O1 -g -o $(INSTALL_DIR)/$@ $@.cc 
 
 clean:
 	rm -f $(INSTALL_DIR)/3pcf_C_version 

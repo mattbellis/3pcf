@@ -35,8 +35,7 @@ set global_params = '-L 0.00 -l 0'
 #set tag = 'evenbinning_CPU_20degx20deg'
 #set tag = 'evenbinning_CPU_5degx5deg'
 #set tag = 'TESTING_BREAKDOWN_010_evenbinning_CPU_5degx5deg_LRG_binning'
-#set tag = 'TESTING_BREAKDOWN_DIFFERENT_000_evenbinning_CPU_5degx5deg_LRG_binning'
-set tag = 'TESTING_evenbinning_CPU_5degx5deg_LRG_binning'
+set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
 
 ################################################################################
 # Read in data.
@@ -57,27 +56,29 @@ set tag = 'TESTING_evenbinning_CPU_5degx5deg_LRG_binning'
 #set tag = 'log10binning_CPU'
 
 
-if ( $which_part == 'all' ) then
     echo "#####################"
-    time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
-    echo "#####################"
-    time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
-    echo "#####################"
-    time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
-    echo "#####################"
-    time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
-    echo "#####################"
+    @ vox_div = 2
+    @ i = 0
+    while ( $i < $vox_div ) 
+        @ j = 0
+        while ( $j < $vox_div ) 
+        @ k = 0
+            while ( $k < $vox_div ) 
+                set index = `printf "%03d%03d%03d" $i $j $k` 
+                echo $index
+                if ( $which_part == '0' ) then
+                    time $executable $input0 $input0 $input0 $global_params -o DDD_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
+                else if ( $which_part == '1' ) then
+                    time $executable $input0 $input0 $input1 $global_params -o DDR_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
+                else if ( $which_part == '2' ) then
+                    time $executable $input0 $input1 $input1 $global_params -o DRR_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
+                else if ( $which_part == '3' ) then
+                    time $executable $input1 $input1 $input1 $global_params -o RRR_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
+                endif
+                @ k += 1
+            end
+            @ j += 1
+        end
+        @ i += 1
+    end
 
-else if ( $which_part == '0' ) then
-    echo "#####################"
-    time $executable $input0 $input0 $input0 $global_params -o DDD_"$tag"_"$ngals"k.dat 
-else if ( $which_part == '1' ) then
-    echo "#####################"
-    time $executable $input0 $input0 $input1 $global_params -o DDR_"$tag"_"$ngals"k.dat 
-else if ( $which_part == '2' ) then
-    echo "#####################"
-    time $executable $input0 $input1 $input1 $global_params -o DRR_"$tag"_"$ngals"k.dat 
-else if ( $which_part == '3' ) then
-    echo "#####################"
-    time $executable $input1 $input1 $input1 $global_params -o RRR_"$tag"_"$ngals"k.dat 
-endif
