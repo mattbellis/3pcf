@@ -10,34 +10,10 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Histogram information
-
-/*
-#define S_NBINS 60
-#define S_LO 0.
-#define S_HI 120.
-
-#define QS_NBINS 16
-#define QS_LO 0.9
-#define QS_HI 4.1
-
-#define THETA_NBINS 25
-#define THETA_LO 0.
-#define THETA_HI 1.
-*/
-
 //////////////////////////
-#define S_NBINS 50
-#define S_LO 2.0
-#define S_HI 12.0
-
-#define QS_NBINS 16
-#define QS_LO 0.9
-#define QS_HI 4.1
-
-#define THETA_NBINS 25
-#define THETA_LO 0.
-#define THETA_HI 1.
-
+#define S_NBINS 700
+#define S_LO 0.0
+#define S_HI 70.0
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -110,7 +86,7 @@ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, int f
 }
 
 ////////////////////////////////////////////////////////////////////////
-int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2, float y2, float z2, int flag, int *totbins)
+int distance(float x0, float y0, float z0, float x1, float y1, float z1, int flag, int *totbins)
 {
 
     float xdiff = x0-x1;
@@ -118,156 +94,21 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     float zdiff = z0-z1;
     float dist0 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
 
-    xdiff = x0-x2;
-    ydiff = y0-y2;
-    zdiff = z0-z2;
-    float dist1 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
+    //int totbin = -999;
 
-    xdiff = x1-x2;
-    ydiff = y1-y2;
-    zdiff = z1-z2;
-    float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-    
-    //if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
-    //if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
-    //if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
-
-    //if (dist0<min_dist) { min_dist = dist0; printf("min_dist: %f\n",min_dist); }
-    //if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
-    //if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
-
-    /*
-    printf("---------\n");
-    printf("%f %f %f\n",x0,x1,x2);
-    printf("%f %f %f\n",y0,y1,y2);
-    printf("%f %f %f\n",z0,z1,z2);
-    printf("%f %f %f\n",dist0,dist1,dist2);
-    */
-
-    float s,qs,theta0,theta1,theta2;
-
-    // Sort the distances
-    //bool b0 = dist0<dist1;
-    //bool b1 = dist1<dist2;
-    //bool b2 = dist0<dist2;
-
-    int i0=-1; // shortest
-    int i1=-1; // middle
-    int i2=-1; // longest
-
-    float shortest,middle,longest;
-
-
-    // From Stackoverflow 
-    // http://stackoverflow.com/questions/13040240/the-fastest-way-to-sort-3-values-java
-    ///*
-    // This is if we want to sort all 3.
-    if( dist0 > dist1 ){
-        if( dist0 > dist2 ){
-            longest = dist0;
-            if( dist1 > dist2 ){
-                middle = dist1;
-                shortest = dist2;
-            }else{
-                middle = dist2;
-                shortest = dist1;
-            }
-        }else{
-            middle = dist0;
-            if( dist1 > dist2 ){
-                longest = dist1;
-                shortest = dist2;
-            }else{
-                longest = dist2;
-                shortest = dist1;
-            }
-        }
-    }else{
-        if( dist1 > dist2 ){
-            longest = dist1;
-            if( dist0 > dist2 ){
-                middle = dist0;
-                shortest = dist2;
-            }else{
-                middle = dist2;
-                shortest = dist0;
-            }
-        }else{
-            middle = dist1;
-            longest = dist2;
-            shortest = dist0;
-        }
-    }
-    //*/
-
-    /*
-       if(dist0<dist1)
-       {
-       shortest=dist0;
-       middle=dist1;
-       longest=dist2; // Not really longest, because we never tested for it. 
-       }
-       if(dist0>=dist1)
-       {
-       shortest=dist1;
-       middle=dist0;
-       longest=dist2; // Not really longest, because we never tested for it. 
-       }
-     */
-
-    int totbin = -999;
-
-    float shortest2 = shortest*shortest;
-    float middle2 = middle*middle;
-    float longest2 = longest*longest;
-    
-    for (int k=0;k<3;k++)
-    {
-        if (k==0) {
-            s = shortest;
-            qs = middle/shortest;
-            theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
-            i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
-        } else if (k==1){
-            s = middle;
-            qs = longest/middle;
-            theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
-            i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
-        } else if (k==2){
-            s = shortest;
-            qs = longest/shortest;
-            //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
-            theta2 = 1.0 - theta0 - theta1;
-            i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
-        }
-
-        //printf("%f %f %f\n",s,qs,theta);
-
-        i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,flag); //Mpc/h, delta s=0.2
-        i1 = distance_to_bin(qs,QS_LO,QS_HI,QS_NBINS,flag); // delta qs = 0.2
-        //i2 = distance_to_bin(theta,0,1.0,25,flag);
+        int i0 = distance_to_bin(dist0,S_LO,S_HI,S_NBINS,flag); //Mpc/h, delta s=0.2
 
         //printf("%d %d %d\n",i0,i1,i2);
-        if (i0<0 || i1<0 || i2<0)
+        if (i0<0)
         {
-            totbin = -999;
+            *totbins = -999;
         } else {
             // Combine for big 1d rep of 3d histogram;
             //int nhistbins = nbins;
             //int nhistbins2 = nhistbins*nhistbins;
-            totbin = QS_NBINS*THETA_NBINS*i0 + THETA_NBINS*i1 + i2;
+            *totbins = i0;
         }
 
-        totbins[k] = totbin;
-        if (dist0==0 || dist1==0 || dist2==0)
-        {
-            //printf("dists: %f %f %f\n",dist0,dist1,dist2);
-            totbins[k] = -999;
-        }
-
-    }
-
-    //return totbin;
     return 1;
 }
 
@@ -283,7 +124,7 @@ int main(int argc, char **argv)
     char *filename;
     char *outfilename = NULL;
     char defaultoutfilename[256];
-    sprintf(defaultoutfilename,"default_out.dat");
+    sprintf(defaultoutfilename,"default_out_2pcf.dat");
 
     char histout[1024];
     sprintf(histout,"0");
@@ -292,7 +133,7 @@ int main(int argc, char **argv)
 
     int flag = 0;
     int voxel_division = -999;
-    int voxel_index[3] = {0,0,0};
+    int voxel_index[2] = {0,0};
     int vtemp = -999;
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -329,9 +170,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (argc < 3)
+    if (argc < 2)
     {
-        printf("\nMust pass in at least three input files on command line!\n");
+        printf("\nMust pass in at least two input files on command line!\n");
         printf("\nUsage: ", argv[0] );
         exit(1);
     }
@@ -348,19 +189,18 @@ int main(int argc, char **argv)
     {
         voxel_index[0] = vtemp/1000000;
         voxel_index[1] = (vtemp/1000)%1000;
-        voxel_index[2] = (vtemp%1000);
         printf("vtemp: %d\n",vtemp);
-        printf("Voxel indices are %03d %03d %03d\n",voxel_index[0],voxel_index[1],voxel_index[2]);
+        printf("Voxel indices are %03d %03d\n",voxel_index[0],voxel_index[1]);
     }
 
     printf("Log binning flag: %d\n",log_binning_flag);
 
-    float *htemp_x[3], *htemp_y[3], *htemp_z[3];
-    float *h_x[3], *h_y[3], *h_z[3];
+    float *htemp_x[2], *htemp_y[2], *htemp_z[2];
+    float *h_x[2], *h_y[2], *h_z[2];
 
     // Open the input files and the output file.
-    FILE *infile[3], *outfile;
-    for (int i=0;i<3;i++)
+    FILE *infile[2], *outfile;
+    for (int i=0;i<2;i++)
     {
         infile[i] = fopen(argv[optind+i],"r");
         printf("Opening input file %d: %s\n",i,argv[optind+i]);
@@ -372,39 +212,29 @@ int main(int argc, char **argv)
     // 2 - middle one is different (DRD or RDR)
     // 3 - last one is different (RRD or DDR)
     bool which_three_input_files = 0;
-    if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])==0)
+    if (strcmp(argv[optind+0],argv[optind+1])==0)
     {
         which_three_input_files = 0;
-        printf("Using the same file! (DDD or RRR)\n");
+        printf("Using the same file! (DD or RR)\n");
     }
-    else if (strcmp(argv[optind+0],argv[optind+1])!=0 && strcmp(argv[optind+1],argv[optind+2])==0)
+    else if (strcmp(argv[optind+0],argv[optind+1])!=0)
     {
         which_three_input_files = 1;
-        printf("Not the same file! (DRR or RDD)\n");
-    }
-    else if (strcmp(argv[optind+0],argv[optind+2])!=0 && strcmp(argv[optind+0],argv[optind+2])==0)
-    {
-        which_three_input_files = 2;
-        printf("Not the same file! (DRD or RDR)\n");
-    }
-    else if (strcmp(argv[optind+0],argv[optind+1])==0 && strcmp(argv[optind+0],argv[optind+2])!=0)
-    {
-        which_three_input_files = 2;
-        printf("Not the same file! (RRD or DDR)\n");
+        printf("Not the same file! (DR or RD)\n");
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // Read in the files.
     ////////////////////////////////////////////////////////////////////////////
 
-    int NUM_GALAXIES[3] = {0,0,0};
-    int size_of_galaxy_array[3];
+    int NUM_GALAXIES[2] = {0,0};
+    int size_of_galaxy_array[2];
     int idummy;
     float temp0, temp1, temp2, dummy;
 
     int max_ngals = 1000000;
 
-    for (int i=0;i<3;i++)
+    for (int i=0;i<2;i++)
     {
         //fscanf(infile[i], "%d", &NUM_GALAXIES[i]);
         //size_of_galaxy_array[i] = NUM_GALAXIES[i] * sizeof(float);    
@@ -440,17 +270,17 @@ int main(int argc, char **argv)
     // Allocation the arrays of galaxies that we actually want to run over.
     ///////////////////////////////////////////////////////////////////////////
 
-    //int min_gals[3] = {0,0,0};
-    //int ngals[3] = {500,500,500};
-    //int max_gals[3] = {min_gals[0]+ngals[0],min_gals[1]+ngals[1],min_gals[2]+ngals[2]};
-    int min_gals[3] = {0,0,0};
-    int max_gals[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
-    int ngals[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
+    //int min_gals[2] = {0,0,0};
+    //int ngals[2] = {500,500,500};
+    //int max_gals[2] = {min_gals[0]+ngals[0],min_gals[1]+ngals[1],min_gals[2]+ngals[2]};
+    int min_gals[2] = {0,0};
+    int max_gals[2] = {NUM_GALAXIES[0],NUM_GALAXIES[1]};
+    int ngals[2] = {NUM_GALAXIES[0],NUM_GALAXIES[1]};
     int lohi[2] = {0,0};
 
     if (voxel_division>0 && vtemp>=0)
     {
-        for (int i=0;i<3;i++)
+        for (int i=0;i<2;i++)
         {
             vox2gal(voxel_division,voxel_index[i],NUM_GALAXIES[i],lohi);
             min_gals[i] = lohi[0];
@@ -459,7 +289,7 @@ int main(int argc, char **argv)
         }
     }
 
-    for (int i=0;i<3;i++)
+    for (int i=0;i<2;i++)
     {
         printf("Galaxy indices: %d %d %d\n",min_gals[i],max_gals[i],ngals[i]);
         h_x[i] = (float*)malloc(ngals[i]*sizeof(float));
@@ -483,10 +313,10 @@ int main(int argc, char **argv)
             //h_y[i][index] = 0.0;
             //h_z[i][index] = 0.0;
 
-            if (index<10 || index>570)
-            {
-                printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
-            }
+            //if (index<10 || index>570)
+            //{
+                //printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
+            //}
             index++;
         }
     }
@@ -502,7 +332,7 @@ int main(int argc, char **argv)
     //int nbins;
     int log_binning=flag;
 
-    int size_hist = (S_NBINS)*(QS_NBINS)*(THETA_NBINS);
+    int size_hist = (S_NBINS);
     int size_hist_bytes = size_hist*sizeof(unsigned int);
 
     hist = (unsigned int*)malloc(size_hist_bytes);
@@ -514,16 +344,14 @@ int main(int argc, char **argv)
     int x, y;
     float dist = 0;
 
-
     bool locked = false;
     int bin_index = 0;
     int calc_count = 0;
     int calc_count_max = 100;
-    int bins[3] = {0,0,0};
+    int bins = 0;
 
-    int min_index[3] = {0,0,0};
-    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
-    int max_index[3] = {ngals[0],ngals[1],ngals[2]};
+    int min_index[2] = {0,0};
+    int max_index[2] = {ngals[0],ngals[1]};
 
     printf("About to enter the loops...\n");
 
@@ -540,52 +368,21 @@ int main(int argc, char **argv)
             jmin = i;
         else if (which_three_input_files==1) // DRR or RDD
             jmin = 0;
-        else if (which_three_input_files==2) // DRD or RDR
-            jmin = 0;
-        else if (which_three_input_files==3) // DDR or RRD
-            jmin = i;
         for(int j=jmin;j<max_index[1];j++)
             //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         {
-            int kmin = min_index[2];
-            if (which_three_input_files==0)
-                //kmin = j+1;
-                kmin = j;
-            else if (which_three_input_files==1)
-                //kmin = j+1;
-                kmin = j;
-            else if (which_three_input_files==2)
-                //kmin = i+1;
-                kmin = i;
-            else if (which_three_input_files==3)
-                kmin = 0;
-            for(int k=kmin;k<max_index[2];k++)
-                //for(int k =0; k < NUM_GALAXIES[2]; k++)
-            {
-
-                //printf("%d ",k);
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
-                            h_x[2][k],h_y[2][k],h_z[2][k], \
-                            flag, bins);
-
-                    //bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
-                            //htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
-                            //htemp_x[2][k],htemp_y[2][k],htemp_z[2][k], \
-                            //hist_min, hist_max, nbins, bin_width, flag, bins);
+                            flag, &bins);
 
                     //printf("bin_index: %d\n",bin_index);
-                    for (int b=0;b<3;b++)
-                    {
-                        bin_index = bins[b];
+                        bin_index = bins;
                         if (bin_index>=0)
                         {
                             hist[bin_index]++;
                             temp_hist[bin_index]++;
                             calc_count += 1;
                         }
-                    }
-            }
         }
     }  
 
@@ -596,28 +393,14 @@ int main(int argc, char **argv)
     outfile = fopen(outfilename, "w");
     fprintf(outfile,"%d\n",NUM_GALAXIES[0]);
     fprintf(outfile,"%d\n",NUM_GALAXIES[1]);
-    fprintf(outfile,"%d\n",NUM_GALAXIES[2]);
-    fprintf(outfile,"%d %d %d\n",S_NBINS,QS_NBINS,THETA_NBINS);
+    fprintf(outfile,"%d\n",S_NBINS);
     fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",S_LO,S_HI,(S_HI-S_LO)/S_NBINS);
-    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",QS_LO,QS_HI,(QS_HI-QS_LO)/QS_NBINS);
-    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",THETA_LO,THETA_HI,(THETA_HI-THETA_LO)/THETA_NBINS);
     for(int i = 0; i < S_NBINS; i++)
     {
-        printf("%d --------------\n",i);
-        //fprintf(outfile,"%d\n",i);
-        for(int j = 0; j < QS_NBINS; j++)
-        {
-            for(int k = 0; k < THETA_NBINS; k++)
-            {
-
-                index = (QS_NBINS)*(THETA_NBINS)*i + (THETA_NBINS)*j + k; 
-                printf("%lu ",hist[index]);
-                fprintf(outfile,"%lu ",hist[index]);
+                index = i;
+                printf("%lu\n",hist[index]);
+                fprintf(outfile,"%lu\n",hist[index]);
                 total += hist[index];
-            }
-            fprintf(outfile,"\n");
-            printf("\n");
-        }
     }
 
     printf("Total: %lu\n",total);
