@@ -109,6 +109,19 @@ title = "s=%4.1f-%4.1f Mpc" % (sbin*width+lo,(sbin+1)*width+lo)
 axtpcf = figtpcf.add_subplot(1,1,1)
 axtpcf.set_title(title)
 
+################################################################################
+# Read in 2pcf stuff.
+infile = open("master_2pcf_reference.dat")
+vals = np.array(infile.read().split()).astype('float')
+nvals = len(vals)
+index = np.arange(0,nvals,2)
+x2pcf = vals[index]
+y2pcf = vals[index+1]
+print x2pcf
+print y2pcf
+#exit()
+################################################################################
+
 lo = histvals[2][0]
 hi = histvals[2][1]
 width = histvals[2][2]

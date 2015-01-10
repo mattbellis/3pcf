@@ -122,4 +122,10 @@ print dd_norm
 print dr_norm
 print rr_norm
 
+outfile = open('master_2pcf_reference.dat','w')
+for xpt,ypt in zip(x,tpcf):
+    output = "%f %f\n" % (xpt+width,ypt)
+    outfile.write(output)
+outfile.close()
+
 plt.show()
