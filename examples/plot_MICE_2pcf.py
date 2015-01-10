@@ -41,13 +41,13 @@ for fcount,f in enumerate(infilename):
 
     if fcount==0:
         dd = pts.copy()
-        dd_norm =  float(ngals[0]*ngals[0]-ngals[0])/2.
+        dd_norm =  float((ngals[0]*ngals[0])-ngals[0])/2.
     elif fcount==1:
         dr = pts.copy()
         dr_norm =  float(ngals[0]*ngals[1])
     elif fcount==2:
         rr = pts.copy()
-        rr_norm =  float(ngals[0]*ngals[0]-ngals[0])/2.
+        rr_norm =  float((ngals[0]*ngals[0])-ngals[0])/2.
 
 
 # Only wory about entries greater than 1000
@@ -112,6 +112,9 @@ axtpcf.plot(x,tpcf,'o-',label=label)
 
 plt.xlabel(r's (Mpc)',fontsize=24)
 #plt.xlim(0,1.5)
+plt.ylim(0.01,100)
+plt.xlim(1,100)
+plt.xscale('log')
 plt.yscale('log')
 
 plt.legend()

@@ -29,11 +29,8 @@ set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 # Bin width of 1.0 (-w 1.0)
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
-#set tag = 'evenbinning_CPU_20degx20deg'
-#set tag = 'evenbinning_CPU_5degx5deg'
-#set tag = 'TESTING_BREAKDOWN_010_evenbinning_CPU_5degx5deg_LRG_binning'
-#set tag = 'TESTING_BREAKDOWN_DIFFERENT_000_evenbinning_CPU_5degx5deg_LRG_binning'
 set tag = '2pcf_TESTING_evenbinning_CPU_5degx5deg_LRG_binning'
+#set tag = '2pcf_TESTING_evenbinning_CPU_20degx20deg_LRG_binning'
 
 
 if ( $which_part == 'all' ) then

@@ -3,6 +3,50 @@ import matplotlib.pylab as plt
 import numpy as np
 import sys
 
+
+################################################################################
+def sxx2cf(s,xpts,ypts):
+
+    cf = None
+    if type(s)==np.ndarray:
+        cf = np.zeros(len(s))
+
+        for i,spt in enumerate(s):
+            diff = np.abs(spt-xpts)
+            m = min(diff)
+            index = diff.tolist().index(m)
+
+            cf[i] = ypts[index]
+    else:
+        diff = np.abs(s-xpts)
+        m = min(diff)
+        index = diff.tolist().index(m)
+
+        cf = ypts[index]
+
+    return cf
+
+################################################################################
+def bin2val(ibin,lo,hi,nbins):
+
+    width = (hi-lo)/float(nbins)
+
+    val = lo + (width*ibin) + (width/2.0)
+
+    return val
+
+################################################################################
+
+################################################################################
+def sqstheta2s1s2s3(s,qs,theta):
+
+    s1 = s
+    s2 = s*qs
+    s3 = s*np.sqrt(1 + qs*qs - 2*qs*np.cos(theta))
+
+    return s1,s2,s3
+
+
 ################################################################################
 # Open the input file
 ################################################################################
@@ -60,6 +104,20 @@ for fcount,f in enumerate(infilename):
         rrr = pts.copy()
         rrr_norm =  float(ngals[0]*(ngals[1]-1)*(ngals[2]-2))/6.
 
+snbins = nbins[0]
+slo = histvals[0][0]
+shi = histvals[0][1]
+swidth = histvals[0][2]
+
+qsnbins = nbins[1]
+qslo = histvals[1][0]
+qshi = histvals[1][1]
+qswidth = histvals[1][2]
+
+thetanbins = nbins[2]
+thetalo = histvals[2][0]
+thetahi = histvals[2][1]
+thetawidth = histvals[2][2]
 
 # Only wory about entries greater than 1000
 '''
@@ -82,7 +140,7 @@ rrr /= rrr_norm
 #print ddd
 #print ddd_norm
 
-tpcf = np.zeros((nbins[0],nbins[1],nbins[2]))
+tpcf = np.zeros((snbins,qsnbins,thetanbins))
 
 #tpcf[good_index] = (ddd[good_index] - (3*ddr[good_index]) + (3*drr[good_index]) - rrr[good_index])/rrr[good_index]
 tpcf = (ddd - (3*ddr) + (3*drr) - rrr)/rrr
@@ -95,19 +153,20 @@ tpcf[tpcf==np.inf] = 0
 
 figall = plt.figure()
 figtpcf = plt.figure()
+figredtpcf = plt.figure()
 
 ax0 = figall.add_subplot(4,1,1)
 ax1 = figall.add_subplot(4,1,2)
 ax2 = figall.add_subplot(4,1,3)
 ax3 = figall.add_subplot(4,1,4)
 
-lo = histvals[0][0]
-hi = histvals[0][1]
-width = histvals[0][2]
-title = "s=%4.1f-%4.1f Mpc" % (sbin*width+lo,(sbin+1)*width+lo)
-
+title = "s=%4.1f-%4.1f Mpc" % (sbin*swidth+slo,(sbin+1)*swidth+slo)
 axtpcf = figtpcf.add_subplot(1,1,1)
 axtpcf.set_title(title)
+
+title = "Reduced s=%4.1f-%4.1f Mpc" % (sbin*swidth+slo,(sbin+1)*swidth+slo)
+axredtpcf = figredtpcf.add_subplot(1,1,1)
+axredtpcf.set_title(title)
 
 ################################################################################
 # Read in 2pcf stuff.
@@ -122,30 +181,46 @@ print y2pcf
 #exit()
 ################################################################################
 
-lo = histvals[2][0]
-hi = histvals[2][1]
-width = histvals[2][2]
-x = np.arange(lo,hi,width)
+x = np.arange(thetalo,thetahi,thetawidth)
 
 print x
 
+sval = bin2val(sbin,slo,shi,snbins)
+
 for qs in qsbin:
+
+    qsval = bin2val(qs,qslo,qshi,qsnbins)
+    print "qsval: %f" % (qsval)
+
     ax0.plot(x,ddd[sbin][qs],'o')
     ax1.plot(x,ddr[sbin][qs],'o')
     ax2.plot(x,drr[sbin][qs],'o')
     ax3.plot(x,rrr[sbin][qs],'o')
 
+    thetaval = np.pi*tpcf[sbin][qs]
 
-    lo = histvals[1][0]
-    hi = histvals[1][1]
-    width = histvals[1][2]
-    label = "qs=%3.1f-%3.1f" % (qs*width+lo,(qs+1)*width+lo)
+    s12,s23,s31 = sqstheta2s1s2s3(sval,qsval,thetaval)
+    #print s12,s23,s31
+    s12cf = sxx2cf(s12,x2pcf,y2pcf)
+    s23cf = sxx2cf(s23,x2pcf,y2pcf)
+    s31cf = sxx2cf(s31,x2pcf,y2pcf)
+    denominator = s12cf*s23cf + s23cf*s31cf + s31cf*s12cf
+
+    label = "qs=%3.1f-%3.1f" % (qs*qswidth+qslo,(qs+1)*qswidth+qslo)
     axtpcf.plot(x,tpcf[sbin][qs],'o-',label=label)
+    plt.xlabel(r'$\theta/\pi$',fontsize=24)
+    plt.xlim(0,1.5)
 
+    label = "qs=%3.1f-%3.1f" % (qs*qswidth+qslo,(qs+1)*qswidth+qslo)
+    axredtpcf.plot(x,tpcf[sbin][qs]/denominator,'o-',label=label)
+    print label
+    print denominator
+    print tpcf[sbin][qs]/denominator
     plt.xlabel(r'$\theta/\pi$',fontsize=24)
     plt.xlim(0,1.5)
 
 plt.legend()
+axtpcf.legend()
 plt.tight_layout()
 
 print "Sums: -----------"
@@ -153,9 +228,5 @@ print ddd_norm
 print ddr_norm
 print drr_norm
 print rrr_norm
-
-print histvals[0]
-print histvals[1]
-print histvals[2]
 
 plt.show()

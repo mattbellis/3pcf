@@ -6,9 +6,6 @@
 
 using namespace std;
 
-#define HIST_MIN 0.0 // for degrees
-#define HIST_MAX 100.0 // for degrees
-
 #define PI 3.14159
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,13 +39,6 @@ using namespace std;
 #define THETA_HI 1.
 
 ///////////////////////////////////////////////////////////////////////////////
-
-//#define DEFAULT_NBINS 20 // for log binning
-//#define DEFAULT_NBINS 64 // for log binning
-#define DEFAULT_NBINS 16 // for log binning
-//#define DEFAULT_NBINS 4 // for log binning
-//#define DEFAULT_NBINS 126 // for log binning
-//#define DEFAULT_NBINS 62 // for log binning
 
 #define CONV_FACTOR 57.2957795 // 180/pi
 
@@ -120,7 +110,7 @@ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, int f
 }
 
 ////////////////////////////////////////////////////////////////////////
-int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2, float y2, float z2, float hist_min, float hist_max, int nbins, float bin_width, int flag, int *totbins)
+int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2, float y2, float z2, int flag, int *totbins)
 {
 
     float xdiff = x0-x1;
@@ -230,22 +220,23 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     float shortest2 = shortest*shortest;
     float middle2 = middle*middle;
     float longest2 = longest*longest;
+    
     for (int k=0;k<3;k++)
     {
         if (k==0) {
             s = shortest;
             qs = middle/shortest;
-            theta0 = (acos((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
+            theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
             i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==1){
             s = middle;
             qs = longest/middle;
-            theta1 = (acos((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
+            theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
             i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==2){
             s = shortest;
             qs = longest/shortest;
-            //theta2 = (acos((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
+            //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
             theta2 = 1.0 - theta0 - theta1;
             i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
         }
@@ -297,20 +288,8 @@ int main(int argc, char **argv)
     char histout[1024];
     sprintf(histout,"0");
 
-    float hist_lower_range = 0.0000001;
-    float hist_upper_range = 0;
-    float hist_bin_width = 0.05;
     int log_binning_flag = 0; // False
 
-    float scale_factor = 1.0; // For if we need to convert input to arcsec or arcmin
-    float conv_factor_angle = 57.2957795; // 180/pi // For if we need to convert arcdistance to arcsec or arcmin
-
-    float hist_min = 0;
-    //float hist_max = 1.8;
-    //float hist_max = 7000.0;
-    float hist_max = sqrt(3*24*24);
-    int nbins = DEFAULT_NBINS;
-    float bin_width = (hist_max-hist_min)/nbins;
     int flag = 0;
     int voxel_division = -999;
     int voxel_index[3] = {0,0,0};
@@ -319,32 +298,19 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
-    while ((c = getopt(argc, argv, "ao:L:l:w:smx:X:")) != -1) {
+    //while ((c = getopt(argc, argv, "ao:L:l:w:smx:X:")) != -1) {
+    while ((c = getopt(argc, argv, "ao:l:x:X:")) != -1) {
         switch(c) {
-            case 'L':
-                printf("L is set\n");
-                hist_lower_range = atof(optarg);
-                break;
-            case 'w':
-                hist_bin_width = atof(optarg);
-                printf("Histogram bin width: %f\n",hist_bin_width);
-                break;
+            //case 'L':
+                //printf("L is set\n");
+                //hist_lower_range = atof(optarg);
+                //break;
+            //case 'w':
+                //hist_bin_width = atof(optarg);
+                //printf("Histogram bin width: %f\n",hist_bin_width);
+                //break;
             case 'l':
                 log_binning_flag = atoi(optarg);
-                break;
-            case 's':
-                scale_factor = 206264.0; // To convert arcseconds to radians.
-                conv_factor_angle *= 3600.0; // convert radians to arcseconds.
-                printf("Reading in values assuming they are arcseconds.\n");
-                printf("scale_factor: %f\n",scale_factor);
-                printf("conv_factor_angle: %f\n",conv_factor_angle);
-                break;
-            case 'm':
-                scale_factor = 3437.74677; // To convert arcminutes to radians.
-                conv_factor_angle *= 60.0; // convert radians to arcminutes.
-                printf("scale_factor: %f\n",scale_factor);
-                printf("conv_factor_angle: %f\n",conv_factor_angle);
-                printf("Reading in values assuming they are arcminutes.\n");
                 break;
             case 'o':
                 outfilename = optarg;
@@ -388,36 +354,6 @@ int main(int argc, char **argv)
     }
 
     printf("Log binning flag: %d\n",log_binning_flag);
-
-    float temp_lo = hist_lower_range;
-    if (hist_upper_range == 0)
-    {
-        if (log_binning_flag==0)
-        {
-            for (int i=0;i<nbins;i++)
-            {
-                hist_upper_range = temp_lo + hist_bin_width;
-                temp_lo = hist_upper_range;
-            }
-        }
-        else if (log_binning_flag==1)
-        {
-            for (int i=0;i<nbins;i++)
-            {
-                hist_upper_range = exp(log(temp_lo) + hist_bin_width);
-                temp_lo = hist_upper_range;
-            }
-        }
-        else if (log_binning_flag==2)
-        {
-            for (int i=0;i<nbins;i++)
-            {
-                hist_upper_range = pow(10,(log10(temp_lo) + hist_bin_width));
-                temp_lo = hist_upper_range;
-            }
-        }
-    }
-    printf("hist_upper_range: %f\n",hist_upper_range);
 
     float *htemp_x[3], *htemp_y[3], *htemp_z[3];
     float *h_x[3], *h_y[3], *h_z[3];
@@ -589,30 +525,6 @@ int main(int argc, char **argv)
     //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
     int max_index[3] = {ngals[0],ngals[1],ngals[2]};
 
-    //int min_index[3] = {0,0,0};
-    //int max_index[3] = {500,500,500};
-
-    //int min_index[3] = {500,0,0};
-    //int max_index[3] = {NUM_GALAXIES[0],500,500};
-
-    //int min_index[3] = {500,500,0};
-    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],500};
-
-    //int min_index[3] = {500,500,500};
-    //int max_index[3] = {NUM_GALAXIES[0],NUM_GALAXIES[1],NUM_GALAXIES[2]};
-
-    //int min_index[3] = {500,0,500};
-    //int max_index[3] = {NUM_GALAXIES[0],500,NUM_GALAXIES[2]};
-
-    //int min_index[3] = {0,0,500};
-    //int max_index[3] = {500,500,NUM_GALAXIES[2]};
-
-    //int min_index[3] = {0,500,500};
-    //int max_index[3] = {500,NUM_GALAXIES[1],NUM_GALAXIES[2]};
-
-    //int min_index[3] = {0,500,0};
-    //int max_index[3] = {500,NUM_GALAXIES[1],500};
-
     printf("About to enter the loops...\n");
 
     for(int i=min_index[0];i<max_index[0]; i++)
@@ -655,7 +567,7 @@ int main(int argc, char **argv)
                     bin_index = distance(h_x[0][i],h_y[0][i],h_z[0][i], \
                             h_x[1][j],h_y[1][j],h_z[1][j], \
                             h_x[2][k],h_y[2][k],h_z[2][k], \
-                            hist_min, hist_max, nbins, bin_width, flag, bins);
+                            flag, bins);
 
                     //bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
                             //htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
