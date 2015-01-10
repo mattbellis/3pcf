@@ -90,6 +90,11 @@ $(OBJ_DIR)/3pcf_Bellis_2D_histo_on_GPU.cu_o : 3pcf_Bellis_2D_histo_on_GPU.cu
 	#$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
 	$(CC) -O1 -g -o $(INSTALL_DIR)/$@ $@.cc 
 
+2pcf_C_version : 2pcf_C_version.cc
+	mkdir -p $(INSTALL_DIR)
+	#$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc -pg
+	$(CC) -O1 -o $(INSTALL_DIR)/$@ $@.cc 
+
 clean:
 	rm -f $(INSTALL_DIR)/3pcf_C_version 
 	rm -f $(INSTALL_DIR)/3pcf_C_version_triangle_parametrization 
