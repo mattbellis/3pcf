@@ -215,6 +215,8 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
        }
      */
 
+    //printf("%f %f %f\n",shortest,middle,longest);
+
     int totbin = -999;
 
     float shortest2 = shortest*shortest;
@@ -483,10 +485,10 @@ int main(int argc, char **argv)
             //h_y[i][index] = 0.0;
             //h_z[i][index] = 0.0;
 
-            if (index<10 || index>570)
-            {
-                printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
-            }
+            //if (index<10 || index>570)
+            //{
+                //printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
+            //}
             index++;
         }
     }
