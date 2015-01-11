@@ -16,9 +16,9 @@ using namespace std;
 #define S_LO 0.
 #define S_HI 120.
 
-#define QS_NBINS 16
-#define QS_LO 0.9
-#define QS_HI 4.1
+#define Q_NBINS 16
+#define Q_LO 0.9
+#define Q_HI 4.1
 
 #define THETA_NBINS 25
 #define THETA_LO 0.
@@ -30,9 +30,9 @@ using namespace std;
 #define S_LO 2.0
 #define S_HI 12.0
 
-#define QS_NBINS 16
-#define QS_LO 0.9
-#define QS_HI 4.1
+#define Q_NBINS 16
+#define Q_LO 0.9
+#define Q_HI 4.1
 
 #define THETA_NBINS 25
 #define THETA_LO 0.
@@ -144,7 +144,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     printf("%f %f %f\n",dist0,dist1,dist2);
     */
 
-    float s,qs,theta0,theta1,theta2;
+    float s,q,theta0,theta1,theta2;
 
     // Sort the distances
     //bool b0 = dist0<dist1;
@@ -225,26 +225,26 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     {
         if (k==0) {
             s = shortest;
-            qs = middle/shortest;
+            q = middle/shortest;
             theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
             i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==1){
             s = middle;
-            qs = longest/middle;
+            q = longest/middle;
             theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
             i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==2){
             s = shortest;
-            qs = longest/shortest;
+            q = longest/shortest;
             //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
             theta2 = 1.0 - theta0 - theta1;
             i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
         }
 
-        //printf("%f %f %f\n",s,qs,theta);
+        //printf("%f %f %f\n",s,q,theta);
 
         i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,flag); //Mpc/h, delta s=0.2
-        i1 = distance_to_bin(qs,QS_LO,QS_HI,QS_NBINS,flag); // delta qs = 0.2
+        i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,flag); // delta q = 0.2
         //i2 = distance_to_bin(theta,0,1.0,25,flag);
 
         //printf("%d %d %d\n",i0,i1,i2);
@@ -255,7 +255,7 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
             // Combine for big 1d rep of 3d histogram;
             //int nhistbins = nbins;
             //int nhistbins2 = nhistbins*nhistbins;
-            totbin = QS_NBINS*THETA_NBINS*i0 + THETA_NBINS*i1 + i2;
+            totbin = Q_NBINS*THETA_NBINS*i0 + THETA_NBINS*i1 + i2;
         }
 
         totbins[k] = totbin;
@@ -502,7 +502,7 @@ int main(int argc, char **argv)
     //int nbins;
     int log_binning=flag;
 
-    int size_hist = (S_NBINS)*(QS_NBINS)*(THETA_NBINS);
+    int size_hist = (S_NBINS)*(Q_NBINS)*(THETA_NBINS);
     int size_hist_bytes = size_hist*sizeof(unsigned int);
 
     hist = (unsigned int*)malloc(size_hist_bytes);
@@ -597,20 +597,20 @@ int main(int argc, char **argv)
     fprintf(outfile,"%d\n",NUM_GALAXIES[0]);
     fprintf(outfile,"%d\n",NUM_GALAXIES[1]);
     fprintf(outfile,"%d\n",NUM_GALAXIES[2]);
-    fprintf(outfile,"%d %d %d\n",S_NBINS,QS_NBINS,THETA_NBINS);
+    fprintf(outfile,"%d %d %d\n",S_NBINS,Q_NBINS,THETA_NBINS);
     fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",S_LO,S_HI,(S_HI-S_LO)/S_NBINS);
-    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",QS_LO,QS_HI,(QS_HI-QS_LO)/QS_NBINS);
+    fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",Q_LO,Q_HI,(Q_HI-Q_LO)/Q_NBINS);
     fprintf(outfile,"%-6.3f %-6.3f %-6.3f\n",THETA_LO,THETA_HI,(THETA_HI-THETA_LO)/THETA_NBINS);
     for(int i = 0; i < S_NBINS; i++)
     {
         printf("%d --------------\n",i);
         //fprintf(outfile,"%d\n",i);
-        for(int j = 0; j < QS_NBINS; j++)
+        for(int j = 0; j < Q_NBINS; j++)
         {
             for(int k = 0; k < THETA_NBINS; k++)
             {
 
-                index = (QS_NBINS)*(THETA_NBINS)*i + (THETA_NBINS)*j + k; 
+                index = (Q_NBINS)*(THETA_NBINS)*i + (THETA_NBINS)*j + k; 
                 printf("%lu ",hist[index]);
                 fprintf(outfile,"%lu ",hist[index]);
                 total += hist[index];
