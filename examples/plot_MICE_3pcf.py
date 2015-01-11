@@ -192,10 +192,10 @@ for qs in qsbin:
     qsval = bin2val(qs,qslo,qshi,qsnbins)
     print "qsval: %f" % (qsval)
 
-    ax0.plot(x,ddd[sbin][qs],'o')
-    ax1.plot(x,ddr[sbin][qs],'o')
-    ax2.plot(x,drr[sbin][qs],'o')
-    ax3.plot(x,rrr[sbin][qs],'o')
+    ax0.plot(x,ddd[sbin][qs]*ddd_norm,'o')
+    ax1.plot(x,ddr[sbin][qs]*ddr_norm,'o')
+    ax2.plot(x,drr[sbin][qs]*drr_norm,'o')
+    ax3.plot(x,rrr[sbin][qs]*rrr_norm,'o')
 
     thetaval = np.pi*tpcf[sbin][qs]
 
