@@ -483,10 +483,10 @@ int main(int argc, char **argv)
             //h_y[i][index] = 0.0;
             //h_z[i][index] = 0.0;
 
-            if (index<10 || index>570)
-            {
-                printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
-            }
+            //if (index<10 || index>570)
+            //{
+                //printf("%d %f %f %f\n",index,h_x[i][index],h_y[i][index],h_z[i][index]);
+            //}
             index++;
         }
     }
