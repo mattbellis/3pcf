@@ -14,12 +14,14 @@ def sxx2cf(s,xpts,ypts):
         for i,spt in enumerate(s):
             diff = np.abs(spt-xpts)
             m = min(diff)
+            print spt,m
             index = diff.tolist().index(m)
 
             cf[i] = ypts[index]
     else:
         diff = np.abs(s-xpts)
         m = min(diff)
+        print s,m
         index = diff.tolist().index(m)
 
         cf = ypts[index]
@@ -192,17 +194,25 @@ for qs in qsbin:
     qsval = bin2val(qs,qslo,qshi,qsnbins)
     print "qsval: %f" % (qsval)
 
-    ax0.plot(x,ddd[sbin][qs],'o')
-    ax1.plot(x,ddr[sbin][qs],'o')
-    ax2.plot(x,drr[sbin][qs],'o')
-    ax3.plot(x,rrr[sbin][qs],'o')
+    ax0.plot(x,ddd[sbin][qs]*ddd_norm,'o')
+    ax1.plot(x,ddr[sbin][qs]*ddr_norm,'o')
+    ax2.plot(x,drr[sbin][qs]*drr_norm,'o')
+    ax3.plot(x,rrr[sbin][qs]*rrr_norm,'o')
 
-    thetaval = np.pi*tpcf[sbin][qs]
+    thetaval = np.pi*(x+thetawidth/2.)
 
+    print "thetaval"
+    print x
+    print thetaval
     s12,s23,s31 = sqstheta2s1s2s3(sval,qsval,thetaval)
     #print s12,s23,s31
+    print "Getting the 2pcf...."
+    print "s12cf"
     s12cf = sxx2cf(s12,x2pcf,y2pcf)
+    print "s23cf"
     s23cf = sxx2cf(s23,x2pcf,y2pcf)
+    print "s31cf"
+    print s31
     s31cf = sxx2cf(s31,x2pcf,y2pcf)
     denominator = s12cf*s23cf + s23cf*s31cf + s31cf*s12cf
 
