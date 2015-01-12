@@ -40,11 +40,11 @@ def bin2val(ibin,lo,hi,nbins):
 ################################################################################
 
 ################################################################################
-def sqstheta2s1s2s3(s,qs,theta):
+def sqtheta2s1s2s3(s,q,theta):
 
     s1 = s
-    s2 = s*qs
-    s3 = s*np.sqrt(1 + qs*qs - 2*qs*np.cos(theta))
+    s2 = s*q
+    s3 = s*np.sqrt(1 + q*q - 2*q*np.cos(theta))
 
     return s1,s2,s3
 
@@ -60,7 +60,7 @@ infilename[2] = infilename[0].replace('DDD','DRR')
 infilename[3] = infilename[0].replace('DDD','RRR')
 
 sbin = int(sys.argv[2])
-qsbin = np.array(sys.argv[3:]).astype('int')
+qbin = np.array(sys.argv[3:]).astype('int')
 
 ddd = None
 ddr = None
@@ -91,7 +91,7 @@ for fcount,f in enumerate(infilename):
 
     pts = vals[15:].astype('float')
 
-    pts = pts.reshape((nbins[0],nbins[1],nbins[2]))
+    pts = pts.reshape((nbins[0],nbins[1],nbins[2]),order='C')
 
     if fcount==0:
         ddd = pts.copy()
@@ -111,10 +111,10 @@ slo = histvals[0][0]
 shi = histvals[0][1]
 swidth = histvals[0][2]
 
-qsnbins = nbins[1]
-qslo = histvals[1][0]
-qshi = histvals[1][1]
-qswidth = histvals[1][2]
+qnbins = nbins[1]
+qlo = histvals[1][0]
+qhi = histvals[1][1]
+qwidth = histvals[1][2]
 
 thetanbins = nbins[2]
 thetalo = histvals[2][0]
@@ -142,7 +142,7 @@ rrr /= rrr_norm
 #print ddd
 #print ddd_norm
 
-tpcf = np.zeros((snbins,qsnbins,thetanbins))
+tpcf = np.zeros((snbins,qnbins,thetanbins))
 
 #tpcf[good_index] = (ddd[good_index] - (3*ddr[good_index]) + (3*drr[good_index]) - rrr[good_index])/rrr[good_index]
 tpcf = (ddd - (3*ddr) + (3*drr) - rrr)/rrr
@@ -189,22 +189,28 @@ print x
 
 sval = bin2val(sbin,slo,shi,snbins)
 
-for qs in qsbin:
+for q in qbin:
 
-    qsval = bin2val(qs,qslo,qshi,qsnbins)
-    print "qsval: %f" % (qsval)
+    qval = bin2val(q,qlo,qhi,qnbins)
+    print "qval: %f" % (qval)
 
-    ax0.plot(x,ddd[sbin][qs]*ddd_norm,'o')
-    ax1.plot(x,ddr[sbin][qs]*ddr_norm,'o')
-    ax2.plot(x,drr[sbin][qs]*drr_norm,'o')
-    ax3.plot(x,rrr[sbin][qs]*rrr_norm,'o')
+    ax0.plot(x,ddd[sbin][q]*ddd_norm,'o')
+    ax1.plot(x,ddr[sbin][q]*ddr_norm,'o')
+    ax2.plot(x,drr[sbin][q]*drr_norm,'o')
+    ax3.plot(x,rrr[sbin][q]*rrr_norm,'o')
+
+    plt.figure()
+    plt.plot(x,ddd[sbin][q]*ddd_norm,'o')
+    #plt.plot(x,ddr[sbin][q]*ddr_norm,'o')
+    #plt.plot(x,drr[sbin][q]*drr_norm,'o')
+    #plt.plot(x,rrr[sbin][q]*rrr_norm,'o')
 
     thetaval = np.pi*(x+thetawidth/2.)
 
     print "thetaval"
     print x
     print thetaval
-    s12,s23,s31 = sqstheta2s1s2s3(sval,qsval,thetaval)
+    s12,s23,s31 = sqtheta2s1s2s3(sval,qval,thetaval)
     #print s12,s23,s31
     print "Getting the 2pcf...."
     print "s12cf"
@@ -216,16 +222,16 @@ for qs in qsbin:
     s31cf = sxx2cf(s31,x2pcf,y2pcf)
     denominator = s12cf*s23cf + s23cf*s31cf + s31cf*s12cf
 
-    label = "qs=%3.1f-%3.1f" % (qs*qswidth+qslo,(qs+1)*qswidth+qslo)
-    axtpcf.plot(x,tpcf[sbin][qs],'o-',label=label)
+    label = "q=%3.1f-%3.1f" % (q*qwidth+qlo,(q+1)*qwidth+qlo)
+    axtpcf.plot(x,tpcf[sbin][q],'o-',label=label)
     plt.xlabel(r'$\theta/\pi$',fontsize=24)
     plt.xlim(0,1.5)
 
-    label = "qs=%3.1f-%3.1f" % (qs*qswidth+qslo,(qs+1)*qswidth+qslo)
-    axredtpcf.plot(x,tpcf[sbin][qs]/denominator,'o-',label=label)
+    label = "q=%3.1f-%3.1f" % (q*qwidth+qlo,(q+1)*qwidth+qlo)
+    axredtpcf.plot(x,tpcf[sbin][q]/denominator,'o-',label=label)
     print label
     print denominator
-    print tpcf[sbin][qs]/denominator
+    print tpcf[sbin][q]/denominator
     plt.xlabel(r'$\theta/\pi$',fontsize=24)
     plt.xlim(0,1.5)
 

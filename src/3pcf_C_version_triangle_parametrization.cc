@@ -1,7 +1,8 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include<cmath>
+//#include<cmath>
+#include<math.h>
 #include <unistd.h>
 
 using namespace std;
@@ -128,35 +129,13 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     zdiff = z1-z2;
     float dist2 = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
     
-    //if (dist0>max_dist) { max_dist = dist0; printf("max_dist: %f\n",max_dist); }
-    //if (dist1>max_dist) { max_dist = dist1; printf("max_dist: %f\n",max_dist); }
-    //if (dist2>max_dist) { max_dist = dist2; printf("max_dist: %f\n",max_dist); }
-
-    //if (dist0<min_dist) { min_dist = dist0; printf("min_dist: %f\n",min_dist); }
-    //if (dist1<min_dist) { min_dist = dist1; printf("min_dist: %f\n",min_dist); }
-    //if (dist2<min_dist) { min_dist = dist2; printf("min_dist: %f\n",min_dist); }
-
-    /*
-    printf("---------\n");
-    printf("%f %f %f\n",x0,x1,x2);
-    printf("%f %f %f\n",y0,y1,y2);
-    printf("%f %f %f\n",z0,z1,z2);
-    printf("%f %f %f\n",dist0,dist1,dist2);
-    */
-
     float s,q,theta0,theta1,theta2;
-
-    // Sort the distances
-    //bool b0 = dist0<dist1;
-    //bool b1 = dist1<dist2;
-    //bool b2 = dist0<dist2;
 
     int i0=-1; // shortest
     int i1=-1; // middle
     int i2=-1; // longest
 
     float shortest,middle,longest;
-
 
     // From Stackoverflow 
     // http://stackoverflow.com/questions/13040240/the-fastest-way-to-sort-3-values-java
@@ -199,21 +178,6 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         }
     }
     //*/
-
-    /*
-       if(dist0<dist1)
-       {
-       shortest=dist0;
-       middle=dist1;
-       longest=dist2; // Not really longest, because we never tested for it. 
-       }
-       if(dist0>=dist1)
-       {
-       shortest=dist1;
-       middle=dist0;
-       longest=dist2; // Not really longest, because we never tested for it. 
-       }
-     */
 
     //printf("%f %f %f\n",shortest,middle,longest);
 
@@ -300,17 +264,8 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
-    //while ((c = getopt(argc, argv, "ao:L:l:w:smx:X:")) != -1) {
     while ((c = getopt(argc, argv, "ao:l:x:X:")) != -1) {
         switch(c) {
-            //case 'L':
-                //printf("L is set\n");
-                //hist_lower_range = atof(optarg);
-                //break;
-            //case 'w':
-                //hist_bin_width = atof(optarg);
-                //printf("Histogram bin width: %f\n",hist_bin_width);
-                //break;
             case 'l':
                 log_binning_flag = atoi(optarg);
                 break;
@@ -427,12 +382,10 @@ int main(int argc, char **argv)
                 printf("Exceeded max num galaxies");
                 exit(-1);
             }
-            ///*
-            //if (j<10)
-            //{
-                //printf("%f %f %f\n", htemp_x[i][j],htemp_y[i][j],htemp_z[i][j]);
-            //}
-            //*/
+            if (j<10)
+            {
+                printf("%f %f %f\n", htemp_x[i][j],htemp_y[i][j],htemp_z[i][j]);
+            }
             NUM_GALAXIES[i] += 1;
             j += 1;
         }
@@ -468,22 +421,12 @@ int main(int argc, char **argv)
         h_y[i] = (float*)malloc(ngals[i]*sizeof(float));
         h_z[i] = (float*)malloc(ngals[i]*sizeof(float));
 
-        //printf("ngals[%d] %d\n",i,ngals[i]);
-        //h_x[i] = (float*)malloc(1000);
-        //h_y[i] = (float*)malloc(1000);
-        //h_z[i] = (float*)malloc(1000);
-
         int index = 0;
         for(int j=min_gals[i];j<max_gals[i];j++)
         {
             h_x[i][index] = htemp_x[i][j];
             h_y[i][index] = htemp_y[i][j];
             h_z[i][index] = htemp_z[i][j];
-
-            //printf("indices: %d %d\n",i,index);
-            //h_x[i][index] = 0.0;
-            //h_y[i][index] = 0.0;
-            //h_z[i][index] = 0.0;
 
             //if (index<10 || index>570)
             //{
@@ -519,8 +462,6 @@ int main(int argc, char **argv)
 
     bool locked = false;
     int bin_index = 0;
-    int calc_count = 0;
-    int calc_count_max = 100;
     int bins[3] = {0,0,0};
 
     int min_index[3] = {0,0,0};
@@ -528,6 +469,8 @@ int main(int argc, char **argv)
     int max_index[3] = {ngals[0],ngals[1],ngals[2]};
 
     printf("About to enter the loops...\n");
+
+    unsigned long long numcalc = 0;
 
     for(int i=min_index[0];i<max_index[0]; i++)
     {
@@ -571,12 +514,9 @@ int main(int argc, char **argv)
                             h_x[2][k],h_y[2][k],h_z[2][k], \
                             flag, bins);
 
-                    //bin_index = distance(htemp_x[0][i],htemp_y[0][i],htemp_z[0][i], \
-                            //htemp_x[1][j],htemp_y[1][j],htemp_z[1][j], \
-                            //htemp_x[2][k],htemp_y[2][k],htemp_z[2][k], \
-                            //hist_min, hist_max, nbins, bin_width, flag, bins);
-
                     //printf("bin_index: %d\n",bin_index);
+                    numcalc += 1;
+
                     for (int b=0;b<3;b++)
                     {
                         bin_index = bins[b];
@@ -584,7 +524,6 @@ int main(int argc, char **argv)
                         {
                             hist[bin_index]++;
                             temp_hist[bin_index]++;
-                            calc_count += 1;
                         }
                     }
             }
@@ -623,6 +562,7 @@ int main(int argc, char **argv)
     }
 
     printf("Total: %lu\n",total);
+    printf("numcalc: %lu\n",numcalc);
 
     fclose(outfile);
     return 0;
