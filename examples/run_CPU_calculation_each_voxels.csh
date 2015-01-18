@@ -39,7 +39,7 @@ set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 ################################################################################
 set global_params = ' '
 #set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
-set tag = 'evenbinning_CPU_5degx5deg_LRG_binning_XSEDE'
+set tag = 'evenbinning_CPU_5degx5deg_LRG_binning_SLAC'
 
 #set index = `printf "%03d%03d%03d" $i $j $k` 
 echo $index
