@@ -31,11 +31,13 @@ set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
 #set global_params = '-w 0.01 -L 0.00 -l 0'
-set global_params = '-L 0.00 -l 0'
+#set global_params = '-L 0.00 -l 0'
+set global_params = ' '
 #set tag = 'evenbinning_CPU_20degx20deg'
 #set tag = 'evenbinning_CPU_5degx5deg'
 #set tag = 'TESTING_BREAKDOWN_010_evenbinning_CPU_5degx5deg_LRG_binning'
-set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
+#set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
+set tag = 'evenbinning_CPU_5degx5deg_LRG_binning_XSEDE'
 
 ################################################################################
 # Read in data.
