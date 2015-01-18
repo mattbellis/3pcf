@@ -51,4 +51,4 @@ else if ( $which_part == '2' ) then
     time $executable $input0 $input1 $input1 $global_params -o DRR_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
 else if ( $which_part == '3' ) then
     time $executable $input1 $input1 $input1 $global_params -o RRR_voxel"$vox_div"_"$index"_"$tag"_"$ngals"k.dat -X $vox_div -x $index
-
+endif
