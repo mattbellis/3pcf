@@ -10,6 +10,7 @@ using namespace std;
 #define HIST_MAX 100.0 // for degrees
 
 #define PI 3.14159
+#define INVPI 1.0/PI
 
 ///////////////////////////////////////////////////////////////////////////////
 // Histogram information
@@ -235,17 +236,17 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
         if (k==0) {
             s = shortest;
             qs = middle/shortest;
-            theta0 = (acos((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
+            theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
             i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==1){
             s = middle;
             qs = longest/middle;
-            theta1 = (acos((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
+            theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))*INVPI;
             i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==2){
             s = shortest;
             qs = longest/shortest;
-            //theta2 = (acos((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
+            //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
             theta2 = 1.0 - theta0 - theta1;
             i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
         }
