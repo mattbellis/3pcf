@@ -23,7 +23,7 @@ INSTALL_DIR       := ../bin/
 #CUDA_INSTALL_PATH := /usr/local/cuda/
 #SDK_INSTALL_PATH  := /usr/include
 #CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
-CUDA_INSTALL_PATH := /usr/local/cuda/
+CUDA_INSTALL_PATH := /usr/local/cuda-6.5/
 SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
 
 # While the INCLUDES and LIBS flags are dependent on the install path, there may 
@@ -89,6 +89,16 @@ $(OBJ_DIR)/3pcf_Bellis_basically_1D.cu_o : 3pcf_Bellis_basically_1D.cu
 $(OBJ_DIR)/3pcf_Bellis_2D_histo_on_GPU.cu_o : 3pcf_Bellis_2D_histo_on_GPU.cu
 	mkdir -p $(OBJ_DIR)
 	$(NVCC) -g -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_Bellis_2D_histo_on_GPU.cu_o $<
+
+
+3pcf_CUDA_version_triangle_parametrization : $(OBJ_DIR)/3pcf_CUDA_version_triangle_parametrization.cu_o
+	mkdir -p $(INSTALL_DIR)
+	$(CXX) -fPIC -o $(INSTALL_DIR)/3pcf_CUDA_version_triangle_parametrization $(OBJ_DIR)//3pcf_CUDA_version_triangle_parametrization.cu_o $(LDFLAGS) $(INCLUDES) $(LIBS)
+
+$(OBJ_DIR)/3pcf_CUDA_version_triangle_parametrization.cu_o : 3pcf_CUDA_version_triangle_parametrization.cu
+	mkdir -p $(OBJ_DIR)
+	$(NVCC) -g -c $(INCLUDES) -o $(OBJ_DIR)/3pcf_CUDA_version_triangle_parametrization.cu_o $<
+
 
 3pcf_C_version : 3pcf_C_version.cc
 	mkdir -p $(INSTALL_DIR)

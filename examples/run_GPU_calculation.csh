@@ -2,7 +2,8 @@
 
 set BIN_DIR = '../bin/'
 #set executable = $BIN_DIR/'3pcf_Bellis'
-set executable = $BIN_DIR/'3pcf_Bellis_basically_1D'
+#set executable = $BIN_DIR/'3pcf_Bellis_basically_1D'
+set executable = $BIN_DIR/'3pcf_CUDA_version_triangle_parametrization'
 #set executable = $BIN_DIR/'3pcf_Bellis_naive'
 #set executable = $BIN_DIR/'3pcf_Bellis_2D_histo_on_GPU'
 #set executable = $BIN_DIR/'3pcf_Bellis_totes_different'
@@ -19,8 +20,15 @@ endif
 
 #set input0 = '../sample_data/weschler_0.025_0.050_xyz_'$ngals'k.dat'
 #set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
-set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
-set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
+#set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
+#set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
+
+#set input0 = '../sample_data/MICE_'$ngals'k_randomized.dat'
+#set input1 = '../sample_data/flat_MICE_'$ngals'k.dat'
+#set input0 = '../sample_data/MICE_20degx20deg_'$ngals'k_randomized.dat'
+#set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
+set input0 = '../sample_data/MICE_5degx5deg_'$ngals'k_randomized.dat'
+set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 
 ls -l $input0
 ls -l $input1
@@ -33,27 +41,10 @@ ls -l $input1
 # Low-edge of 1st bin is 1 arg min. (-L 1.00)
 ################################################################################
 #set global_params = '-w 0.01 -L 0.00 -l 0'
-set global_params = '-L 0.00 -l 0'
+set global_params = ' '
 #set tag = 'evenbinning_GPU_2D_histo_on_GPU'
-set tag = 'TIMING_evenbinning_GPU_naive_16bin_cartesian'
+set tag = 'evenbinning_GPU_naive_LRG_binning'
 
-################################################################################
-# Read in data.
-# Log binning (base e) (-l 1)
-# Bin width of 0.05 (-w 0.05)
-# Low-edge of 1st bin is 1 arg min. (-L 1.00)
-################################################################################
-#set global_params = '-w 0.05 -L 1.00 -l 1'
-#set tag = 'logbinning_GPU'
-
-################################################################################
-# Read in data.
-# Log10 binning (base 10) (-l 2)
-# Bin width of 0.02 (-w 0.02)
-# Low-edge of 1st bin is 1 arg min. (-L 1.00)
-################################################################################
-#set global_params = '-w 0.02 -L 1.00 -l 2'
-#set tag = 'log10binning_GPU'
 
 
 if ( $which_part == 'all' ) then

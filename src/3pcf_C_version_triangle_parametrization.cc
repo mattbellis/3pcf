@@ -192,17 +192,17 @@ int distance(float x0, float y0, float z0, float x1, float y1, float z1,float x2
     {
         if (k==0) {
             s = shortest;
-            qs = middle/shortest;
+            q = middle/shortest;
             theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
             i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==1){
             s = middle;
-            qs = longest/middle;
+            q = longest/middle;
             theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))*INVPI;
             i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,flag);
         } else if (k==2){
             s = shortest;
-            qs = longest/shortest;
+            q = longest/shortest;
             //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
             theta2 = 1.0 - theta0 - theta1;
             i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,flag);
