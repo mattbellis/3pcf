@@ -8,8 +8,8 @@
 
 using namespace std;
 
-//#define SUBMATRIX_SIZE 16384
-#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 16384
+//#define SUBMATRIX_SIZE 4096
 //#define SUBMATRIX_SIZE 2048
 //#define SUBMATRIX_SIZE 1024
 //#define SUBMATRIX_SIZE 512
@@ -22,11 +22,11 @@ using namespace std;
 // copmilation.
 ////////////////////////////////////////////////////////////////////////
 
-//#define DEFAULT_NBINS 254 
+#define DEFAULT_NBINS 256 
 //#define DEFAULT_NBINS 126 
 //#define DEFAULT_NBINS 62 
 //#define DEFAULT_NBINS 30 
-#define DEFAULT_NBINS 16
+//#define DEFAULT_NBINS 16
 //#define DEFAULT_NBINS 8
 //#define DEFAULT_NBINS 6 
 
@@ -92,8 +92,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////////
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // This should range to SUBMATRIX_SIZE
 
-    int tot_hist_size = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
-    //int tot_hist_size = ((DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6);
+    //int tot_hist_size = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    int tot_hist_size = (DEFAULT_NBINS);
 
     int idxorg = idx;
 
@@ -102,8 +102,8 @@ __global__ void distance(
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    __shared__ int shared_hist[(DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS)];
-    //__shared__ int shared_hist[(DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6];
+    //__shared__ int shared_hist[(DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS)];
+    __shared__ int shared_hist[DEFAULT_NBINS];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
@@ -228,7 +228,9 @@ __global__ void distance(
 
                     //totbin = ti2 + (ti1*(ti1+1))/2 + (ti0*(ti0+1)*(ti0+2))/6;
                     //totbin = (ti0)*(3*(nbins+2)*((nbins+2)+1)-(3*(nbins+2)+2)*(ti0+1) + (ti0+1)*(ti0+1))/6 + (ti1)*(2*(nbins+2)-(ti1+1))/2 + ti2;
-                    totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
+                    //////// THIS IS WHAT WE WERE USING!
+                    //totbin = DEFAULT_NBINS2*i2 + DEFAULT_NBINS*i1 + i0;
+
                     //totbin = 1.0;
 
                     //totbin = nhistbins2*i2 + nhistbins*i1 + i0;
@@ -317,12 +319,18 @@ __global__ void distance(
                     // THIS SEEMS TO WORK HERE!!!!!!
                     //if (j>idx+1 && k>j+1 && idx<max_xind)
                     //if (totbin>=0 && totbin<tot_hist_size)
-                    if (totbin==20)
+                    //if (0)
+                    //if (i2==12)
+                    //if (i1==12)
+                    //if (totbin==20)
+                    //if (i0>=0 && i0<tot_hist_size)
+                    if (i2==12 && i1==12 && i0>=0 && i0<tot_hist_size)
                     {
                         //int temp = shared_hist[totbin]|1;
                         //shared_hist[threadIdx.x] = totbin;
                         //shared_hist[totbin]++;
-                        atomicAdd(&shared_hist[totbin],1);
+                        //atomicAdd(&shared_hist[totbin],1);
+                        atomicAdd(&shared_hist[i0],1);
                     }
 
             }
@@ -368,7 +376,7 @@ int main(int argc, char **argv)
     //float hist_max = 7000.0;
     float hist_max = sqrt(3.0*(24*24)); // For the nearest 1k in Wechsler
     //float hist_max = sqrt(3.0*(48.6*48.6)); // For the nearest 10k in Wechsler
-    float bin_width = (hist_max-hist_min)/nbins;
+    float bin_width = (hist_max-hist_min)/DEFAULT_NBINS;
     float hist_bin_width = bin_width; // For now
     int flag = 0;
 
@@ -524,8 +532,8 @@ int main(int argc, char **argv)
     // 128*4 = 512, the amount of memory needed for one histogram.
     // 8192*4 = 32768 is max memory to ask for for the histograms.
     // 8192/128 = 64, is is the right number of blocks?
-    //grid.x = 8192/(tot_nbins); // Is this the number of blocks?
-    grid.x = 32; // Is this the number of blocks?
+    grid.x = 8192/(DEFAULT_NBINS); // Is this the number of blocks?
+    //grid.x = 32; // Is this the number of blocks?
     //grid.x = 8; // Is this the number of blocks?
     //grid.x = 4; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
@@ -547,8 +555,8 @@ int main(int argc, char **argv)
     // This is the total number of bins/bytes we need for all of the 
     // different histograms we'll be creating
     ////////////////////////////////////////////////////////////////////////////
-    int tot_nbins = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
-    //int tot_nbins = (DEFAULT_NBINS+2+2)*(DEFAULT_NBINS+2+1)*(DEFAULT_NBINS+2)/6;
+    //int tot_nbins = (DEFAULT_NBINS)*(DEFAULT_NBINS)*(DEFAULT_NBINS);
+    int tot_nbins = DEFAULT_NBINS;
     //int size_hist = SUBMATRIX_SIZE*tot_nbins;
     //int size_hist = 4*tot_nbins;
     int size_hist = grid.x*tot_nbins;
@@ -598,7 +606,7 @@ int main(int argc, char **argv)
         cudaMemset(d_y[i],0,size_of_galaxy_array[i]);
         cudaMemset(d_z[i],0,size_of_galaxy_array[i]);
 
-        //printf("gal: %f\n",h_x[i][0]);
+        printf("HERE gal: %f\n",h_x[i][0]);
         cudaMemcpy(d_x[i], h_x[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
         cudaMemcpy(d_y[i], h_y[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
         cudaMemcpy(d_z[i], h_z[i], size_of_galaxy_array[i], cudaMemcpyHostToDevice );
@@ -682,7 +690,7 @@ int main(int argc, char **argv)
                     printf("xind: %5d %5d\n",xind,max_x);
                     printf("yind: %5d %5d\n",yind,max_y);
                     printf("zind: %5d %5d\n",zind,max_z);
-                    printf("nbins: %d\n",nbins);
+                    printf("DEFAULT_NBINS: %d\n",DEFAULT_NBINS);
                     //distance<<<grid,block>>>(h_x[0],h_y[0],h_z[0], 
                     distance<<<grid,block>>>(
                             d_x[0],d_y[0],d_z[0],\
@@ -690,7 +698,7 @@ int main(int argc, char **argv)
                             d_x[2],d_y[2],d_z[2],\
                             xind, yind, zind, \
                             max_x, max_y, max_z,\
-                            dev_hist, hist_lower_range, hist_upper_range, nbins, \
+                            dev_hist, hist_lower_range, hist_upper_range, DEFAULT_NBINS, \
                             hist_bin_width, log_binning_flag, conv_factor_angle);
                     //printf("there\n");
                     //printf("dev_hist: %x\n",dev_hist);
@@ -713,6 +721,7 @@ int main(int argc, char **argv)
                         //{
                         //printf("%d %lu\n",m,hist[m]);
                         //}
+                        //printf("%d",hist[m]);
                         summed_hist[bin_index] += hist[m];
                         tot0 += hist[m];
                     }    
@@ -721,22 +730,25 @@ int main(int argc, char **argv)
         }
     }
 
-    cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
+    //cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
 
     unsigned long long total = 0;
     int index = 0;
-    fprintf(outfile,"%d %d %d\n",nbins,nbins,nbins);
-    for(int i = 0; i < nbins; i++)
+    fprintf(outfile,"%d %d %d\n",DEFAULT_NBINS,DEFAULT_NBINS,DEFAULT_NBINS);
+    //for(int i = 0; i < DEFAULT_NBINS; i++)
+    for(int i = 0; i < 1; i++)
     {
         //printf("%d --------------\n",i);
         fprintf(outfile,"%d\n",i);
         //for(int j = i; j < nbins; j++)
-        for(int j = 0; j < nbins; j++)
+        //for(int j = 0; j < DEFAULT_NBINS; j++)
+        for(int j = 0; j < 1; j++)
         {
             //for(int k = j; k < nbins; k++)
-            for(int k = 0; k < nbins; k++)
+            for(int k = 0; k < DEFAULT_NBINS; k++)
             {
-                index = (nbins)*(nbins)*k + (nbins)*j + i;
+                //index = (DEFAULT_NBINS)*(DEFAULT_NBINS)*k + (DEFAULT_NBINS)*j + i;
+                index = k;
                 //printf("%lu ",summed_hist[index]);
                 fprintf(outfile,"%lu ",summed_hist[index]);
                 total += summed_hist[index];
