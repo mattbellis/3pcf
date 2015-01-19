@@ -33,18 +33,22 @@ using namespace std;
 #define S_NBINS 50
 #define S_LO 2.0
 #define S_HI 12.0
+#define S_WIDTH (S_HI-S_LO)/S_NBINS
 
 #define Q_NBINS 16
 #define Q_LO 0.9
 #define Q_HI 4.1
+#define Q_WIDTH (Q_HI-Q_LO)/Q_NBINS
 
 #define THETA_NBINS 25
 #define THETA_LO 0.
 #define THETA_HI 1.
+#define THETA_WIDTH (THETA_HI-THETA_LO)/THETA_NBINS
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define SUBMATRIX_SIZE 4096
+//#define SUBMATRIX_SIZE 4096
+#define SUBMATRIX_SIZE 1024
 
 #define CONV_FACTOR 57.2957795 // 180/pi
 
@@ -94,7 +98,7 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
     else if(dist >= hist_max)
         return -999;
     else
-        bin_index = floor((dist-hist_min)/bin_width);
+        bin_index = int((dist-hist_min)/bin_width);
     /*
        else
        {
@@ -123,8 +127,8 @@ __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int n
 __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, float *z1,float *x2, float *y2, float *z2, \
         int xind, int yind, int zind, \
         int max_xind, int max_yind, int max_zind, \
-        unsigned int *dev_hist, float hist_min, float hist_max, int nbins, \
-        float bin_width, int flag=0)
+        int *dev_hist, float hist_min, float hist_max, int nbins, \
+        float bin_width, float *dev_test, int flag=0)
 {
 
     ////////////////////////////////////////////////////////////////////////////
@@ -142,7 +146,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    __shared__ unsigned int shared_hist[THETA_NBINS];
+    __shared__ int shared_hist[THETA_NBINS];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
@@ -197,7 +201,8 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
         zpt0 = z0[idx];
 
 
-        for(j=yind; j<ymax; j++)
+        //for(j=yind; j<ymax; j++)
+        for(j=idx; j<ymax; j++)
             //for(j=idx+1; j<ymax; j++)
         {
             xpt1 = x1[j];
@@ -214,7 +219,8 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
 
 
 # pragma unroll
-            for(k=zind; k<zmax; k++)
+            //for(k=zind; k<zmax; k++)
+            for(k=j; k<zmax; k++)
                 //for(k=j+1; k<zmax; k++)
             {
                 xpt2 = x2[k];
@@ -246,7 +252,6 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
 
                 // From Stackoverflow 
                 // http://stackoverflow.com/questions/13040240/the-fastest-way-to-sort-3-values-java
-                ///*
                 // This is if we want to sort all 3.
                 if( dist0 > dist1 ){
                     if( dist0 > dist2 ){
@@ -284,42 +289,88 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         shortest = dist0;
                     }
                 }
-                //*/
+
+                //shortest = 1.0;
+                //middle = 1.0;
+                //longest = 1.5;
+
+                //shortest = dist0;
+                //middle = dist1;
+                //longest = dist2;
 
                 shortest2 = shortest*shortest;
                 middle2 = middle*middle;
                 longest2 = longest*longest;
+
+                //dev_test[0] = xpt0;
+                //dev_test[1] = xpt1;
+                //dev_test[2] = xpt2;
+
+                //if (idx==10 && j==20 && k==90)
+                //{
+                    //dev_test[0] = dist0;
+                    //dev_test[1] = dist1;
+                    //dev_test[2] = dist2;
+                //}
+
+                //dev_test[0] = xpt1;
+                //dev_test[1] = xpt2;
+                //dev_test[2] = xpt0;
 
                 for (int n=0;n<3;n++)
                 {
                     if (n==0) {
                         s = shortest;
                         q = middle/shortest;
-                        theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
-                        i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,bin_width,flag);
+                        theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
+                        //theta0 = 0.5;
+                        i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
                     } else if (n==1){
                         s = middle;
                         q = longest/middle;
-                        theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))*INVPI;
-                        i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,bin_width,flag);
+                        theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
+                        i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
                     } else if (n==2){
                         s = shortest;
                         q = longest/shortest;
-                        //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
+                        //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
                         theta2 = 1.0 - theta0 - theta1;
-                        i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,bin_width,flag);
+                        //i2 = distance_to_bin(0.5,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
+                        i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
+                        //i2 = 13;
                     }
 
                     //printf("%f %f %f\n",s,q,theta);
 
-                    i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,bin_width,flag); //Mpc/h, delta s=0.2
-                    i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,bin_width,flag); // delta q = 0.2
-                    //i2 = distance_to_bin(theta,0,1.0,25,bin_width,flag);
+                    i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,S_WIDTH,flag); //Mpc/h, delta s=0.2
+                    i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,Q_WIDTH,flag); // delta q = 0.2
+                    //i2 = distance_to_bin(theta,0,1.0,25,THETA_WIDTH,flag);
 
+                    //if (idx==1000 && j==1001 && k==1002)
+                    /*
+                    if ((dist0<12 && dist1<12 && dist2<12 &&
+                         dist0>2 && dist1>2 && dist2>2))
+                    {
+                        dev_test[0] = float(i0);
+                        dev_test[1] = float(i1);
+                        dev_test[2] = float(i2);
+                        dev_test[3] = dist0;
+                        dev_test[4] = dist1;
+                        dev_test[5] = dist2;
+                        //dev_test[0] = s;
+                        //dev_test[1] = q;
+                        //dev_test[2] = theta2;
+                    }
+                    */
                     // Increment the ``column" of the histogram
-                    if (i0==10 && i1==0 && i2>=0)
+                    if (i0==49 && i1==15 && i2>=0)
+                    //if (1)
                     {
                         atomicAdd(&shared_hist[i2],1);
+                        //shared_hist[i2] +=1;
+                        //shared_hist[0] +=1;
+                        //shared_hist[k%THETA_NBINS] += k;
+                        //atomicAdd(&shared_hist[0],1);
                     }
 
                 }
@@ -334,6 +385,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
         for(int i=0;i<tot_hist_size;i++)
         {
             dev_hist[i+(blockIdx.x*tot_hist_size)]=shared_hist[i];
+            //dev_hist[i] = 20;
         }
     }
 
@@ -488,10 +540,10 @@ int main(int argc, char **argv)
                 printf("Exceeded max num galaxies");
                 exit(-1);
             }
-            if (j<10)
-            {
-                printf("%f %f %f\n", htemp_x[i][j],htemp_y[i][j],htemp_z[i][j]);
-            }
+            //if (j<10)
+            //{
+                //printf("%f %f %f\n", htemp_x[i][j],htemp_y[i][j],htemp_z[i][j]);
+            //}
             NUM_GALAXIES[i] += 1;
             j += 1;
         }
@@ -568,15 +620,20 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////////////////////////////
     // Allocation of histograms.
     ///////////////////////////////////////////////////////////////////////////
-    unsigned int *hist;
-    unsigned int *dev_hist;
+    int *hist;
+    int *dev_hist;
+    float *dev_test;
+    float *host_test;
     unsigned long int *summed_hist;
     //int nbins;
     int log_binning=flag;
 
     int size_hist = grid.x*(THETA_NBINS);
-    int size_hist_bytes = size_hist*sizeof(unsigned int);
-    hist = (unsigned int*)malloc(size_hist_bytes);
+    int size_hist_bytes = size_hist*sizeof(int);
+
+    host_test = (float*)malloc(3*sizeof(float));
+
+    hist = (int*)malloc(size_hist_bytes);
     memset(hist, 0, size_hist_bytes);
 
     cudaMalloc((void **) &dev_hist, (size_hist_bytes));
@@ -591,8 +648,20 @@ int main(int argc, char **argv)
     printf("dev_hist bins: %d\n",size_hist);
     printf("dev_hist size: %d\n",size_hist_bytes);
 
+    cudaMalloc((void **) &dev_test, (6*sizeof(float)));
+    cudaMemset(dev_test, 0, (6*sizeof(float)));
 
-    unsigned long int summed_hist_size = THETA_NBINS * sizeof(unsigned long int);
+
+    cudaMemcpy(dev_hist, hist, size_hist_bytes, cudaMemcpyHostToDevice);
+    error = cudaGetLastError();
+    printf("BEFORE KERNEL memcpy copying hist to dev_hist ERROR: %s\n", cudaGetErrorString(error) );
+
+    cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
+    error = cudaGetLastError();
+    printf("BEFORE KERNEL memcpy copying dev_hist to hist ERROR: %s\n", cudaGetErrorString(error) );
+
+
+    int summed_hist_size = THETA_NBINS * sizeof(unsigned long int);
     summed_hist =  (unsigned long int*)malloc(summed_hist_size);
     printf("Size of summed histogram array: %d bins\t%d bytes\n",(THETA_NBINS),summed_hist_size);
     memset(summed_hist,0,summed_hist_size);
@@ -682,30 +751,39 @@ int main(int argc, char **argv)
 
     float hist_bin_width = (THETA_HI-THETA_LO)/THETA_NBINS;
 
-    for(int i=min_index[0];i<max_index[0]; i++)
+    //for(int i=min_index[0];i<max_index[0]; i++)
+    for(int i = 0; i < num_submatrices[0]; i++)
     {
         if (i%100==0)
         {
             printf("%d\n",i);
             fflush(stdout); 
         }
-        int jmin = min_index[1];
+        //int jmin = min_index[1];
+        xind = i*SUBMATRIX_SIZE;
+        int jmin = 0;
         if (which_three_input_files==0) // DDD or RRR
             //jmin = i+1;
-            jmin = i;
+            //jmin = i;
+            jmin = 0;
         else if (which_three_input_files==1) // DRR or RDD
             jmin = 0;
         else if (which_three_input_files==2) // DRD or RDR
             jmin = 0;
         else if (which_three_input_files==3) // DDR or RRD
             jmin = i;
-        for(int j=jmin;j<max_index[1];j++)
-            //for(int j = 0; j < NUM_GALAXIES[1]; j++)
+        //for(int j=jmin;j<max_index[1];j++)
+        //for(int j = 0; j < NUM_GALAXIES[1]; j++)
+        for(int j = jmin; j < num_submatrices[1]; j++)
         {
-            int kmin = min_index[2];
+            yind = j*SUBMATRIX_SIZE;
+
+            //int kmin = min_index[2];
+            int kmin = 0;
             if (which_three_input_files==0)
                 //kmin = j+1;
-                kmin = j;
+                //kmin = j;
+                kmin = 0;
             else if (which_three_input_files==1)
                 //kmin = j+1;
                 kmin = j;
@@ -714,16 +792,22 @@ int main(int argc, char **argv)
                 kmin = i;
             else if (which_three_input_files==3)
                 kmin = 0;
-            for(int k=kmin;k<max_index[2];k++)
-                //for(int k =0; k < ngals[2]; k++)
+            //for(int k=kmin;k<max_index[2];k++)
+            //for(int k =0; k < ngals[2]; k++)
+            for(int k =kmin; k < num_submatrices[2]; k++)
             {
+                zind = k*SUBMATRIX_SIZE;
+
 
                 int max_x = ngals[0];
                 int max_y = ngals[1];
                 int max_z = ngals[2];
 
-                                    cudaMemset(dev_hist,0,size_hist_bytes);
+                cudaMemset(dev_hist,0,size_hist_bytes);
 
+                printf("xind: %5d %5d\n",xind,max_x);
+                printf("yind: %5d %5d\n",yind,max_y);
+                printf("zind: %5d %5d\n",zind,max_z);
 
                 //printf("%d ",k);
                 distance<<<grid,block>>>(
@@ -733,10 +817,36 @@ int main(int argc, char **argv)
                         xind, yind, zind, \
                         max_x, max_y, max_z,\
                         dev_hist, THETA_LO, THETA_HI, THETA_NBINS, \
-                        hist_bin_width, log_binning_flag);
+                        hist_bin_width, dev_test, log_binning_flag);
 
                 //printf("bin_index: %d\n",bin_index);
                 numcalc += 1;
+
+
+                error = cudaGetLastError();
+                printf("kernel ERROR: %s\n", cudaGetErrorString(error) );
+
+                cudaMemcpy(hist, dev_hist, size_hist_bytes, cudaMemcpyDeviceToHost);
+
+                error = cudaGetLastError();
+                printf("memcpy copying hist to dev_hist ERROR: %s\n", cudaGetErrorString(error) );
+
+                cudaMemcpy(host_test, dev_test, 6*sizeof(float), cudaMemcpyDeviceToHost);
+
+                printf("host_test: %f %f %f\n",host_test[0],host_test[1],host_test[2]);
+                printf("host_test: %f %f %f\n",host_test[3],host_test[4],host_test[5]);
+
+                for(int m=0; m<size_hist; m++)
+                {
+                    bin_index = m%(THETA_NBINS);
+                    //if (hist[m]!=0)
+                    //{
+                        //printf("%d %lu\n",m,hist[m]);
+                    //}
+                    summed_hist[bin_index] += hist[m];
+                    tot0 += hist[m];
+                }
+
 
             }
         }
@@ -765,9 +875,9 @@ int main(int argc, char **argv)
 
                 //index = (Q_NBINS)*(THETA_NBINS)*i + (THETA_NBINS)*j + k; 
                 index = k;
-                printf("%lu ",hist[index]);
-                fprintf(outfile,"%lu ",hist[index]);
-                total += hist[index];
+                printf("%lu ",summed_hist[index]);
+                fprintf(outfile,"%lu ",summed_hist[index]);
+                total += summed_hist[index];
             }
             fprintf(outfile,"\n");
             printf("\n");

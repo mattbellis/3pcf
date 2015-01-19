@@ -23,7 +23,8 @@ INSTALL_DIR       := ../bin/
 #CUDA_INSTALL_PATH := /usr/local/cuda/
 #SDK_INSTALL_PATH  := /usr/include
 #CUDA_INSTALL_PATH := /usr/local/cuda-5.0/
-CUDA_INSTALL_PATH := /usr/local/cuda-6.5/
+#CUDA_INSTALL_PATH := /usr/local/cuda-6.5/
+#CUDA_INSTALL_PATH := /usr/local/cuda-5.5/
 SDK_INSTALL_PATH  := ${CUDA_INSTALL_PATH}/samples/
 
 # While the INCLUDES and LIBS flags are dependent on the install path, there may 
