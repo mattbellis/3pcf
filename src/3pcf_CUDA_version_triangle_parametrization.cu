@@ -88,7 +88,7 @@ void vox2gal(int voxel_division,int voxel_index,int ngals,int *gal_indices)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-__device__ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width, int flag)
+__device__ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width)
 {
     int bin_index = 0;
 
@@ -183,7 +183,16 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
 
 
         //for(j=yind; j<ymax; j++)
-        for(j=idx; j<ymax; j++)
+        int jmin = 0;
+        if (flag==0) // DDD or RRR
+            jmin = idx;
+        else if (flag==1) // DRR or RDD
+            jmin = 0;
+        else if (flag==2) // DRD or RDR
+            jmin = 0;
+        else if (flag==3) // DDR or RRD
+            jmin = idx;
+        for(j=jmin; j<ymax; j++)
             //for(j=idx+1; j<ymax; j++)
         {
             xpt1 = x1[j];
@@ -201,7 +210,16 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
 
 # pragma unroll
             //for(k=zind; k<zmax; k++)
-            for(k=j; k<zmax; k++)
+            int kmin = 0;
+            if (flag==0)
+                kmin = j;
+            else if (flag==1)
+                kmin = j;
+            else if (flag==2)
+                kmin = i;
+            else if (flag==3)
+                kmin = 0;
+            for(k=kmin; k<zmax; k++)
                 //for(k=j+1; k<zmax; k++)
             {
                 xpt2 = x2[k];
@@ -308,27 +326,27 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         q = middle/shortest;
                         theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
                         //theta0 = 0.5;
-                        i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
+                        i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
                     } else if (n==1){
                         s = middle;
                         q = longest/middle;
                         theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))*INVPI;
-                        i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
+                        i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
                     } else if (n==2){
                         s = shortest;
                         q = longest/shortest;
                         //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
                         theta2 = 1.0 - theta0 - theta1;
-                        //i2 = distance_to_bin(0.5,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
-                        i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
+                        //i2 = distance_to_bin(0.5,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
+                        i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
                         //i2 = 13;
                     }
 
                     //printf("%f %f %f\n",s,q,theta);
 
-                    i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,S_WIDTH,flag); //Mpc/h, delta s=0.2
-                    i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,Q_WIDTH,flag); // delta q = 0.2
-                    //i2 = distance_to_bin(theta,0,1.0,25,THETA_WIDTH,flag);
+                    i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,S_WIDTH); //Mpc/h, delta s=0.2
+                    i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,Q_WIDTH); // delta q = 0.2
+                    //i2 = distance_to_bin(theta,0,1.0,25,THETA_WIDTH);
 
                     //if (idx==1000 && j==1001 && k==1002)
                     /*
@@ -758,16 +776,14 @@ int main(int argc, char **argv)
         //int jmin = min_index[1];
         xind = i*SUBMATRIX_SIZE;
         int jmin = 0;
-        if (which_three_input_files==0) // DDD or RRR
-            //jmin = i+1;
+        //if (which_three_input_files==0) // DDD or RRR
             //jmin = i;
-            jmin = 0;
-        else if (which_three_input_files==1) // DRR or RDD
-            jmin = 0;
-        else if (which_three_input_files==2) // DRD or RDR
-            jmin = 0;
-        else if (which_three_input_files==3) // DDR or RRD
-            jmin = i;
+        //else if (which_three_input_files==1) // DRR or RDD
+            //jmin = 0;
+        //else if (which_three_input_files==2) // DRD or RDR
+            //jmin = 0;
+        //else if (which_three_input_files==3) // DDR or RRD
+            //jmin = i;
         //for(int j=jmin;j<max_index[1];j++)
         //for(int j = 0; j < NUM_GALAXIES[1]; j++)
         for(int j = jmin; j < num_submatrices[1]; j++)
@@ -776,18 +792,14 @@ int main(int argc, char **argv)
 
             //int kmin = min_index[2];
             int kmin = 0;
-            if (which_three_input_files==0)
-                //kmin = j+1;
+            //if (which_three_input_files==0)
                 //kmin = j;
-                kmin = 0;
-            else if (which_three_input_files==1)
-                //kmin = j+1;
-                kmin = j;
-            else if (which_three_input_files==2)
-                //kmin = i+1;
-                kmin = i;
-            else if (which_three_input_files==3)
-                kmin = 0;
+            //else if (which_three_input_files==1)
+                //kmin = j;
+            //else if (which_three_input_files==2)
+                //kmin = i;
+            //else if (which_three_input_files==3)
+                //kmin = 0;
             //for(int k=kmin;k<max_index[2];k++)
             //for(int k =0; k < ngals[2]; k++)
             for(int k =kmin; k < num_submatrices[2]; k++)
@@ -813,7 +825,7 @@ int main(int argc, char **argv)
                         xind, yind, zind, \
                         max_x, max_y, max_z,\
                         dev_hist, THETA_LO, THETA_HI, THETA_NBINS, \
-                        hist_bin_width, dev_test, log_binning_flag);
+                        hist_bin_width, dev_test, which_three_input_files);
 
                 //printf("bin_index: %d\n",bin_index);
                 numcalc += 1;
