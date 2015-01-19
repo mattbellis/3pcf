@@ -47,8 +47,8 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//#define SUBMATRIX_SIZE 4096
-#define SUBMATRIX_SIZE 1024
+#define SUBMATRIX_SIZE 4096
+//#define SUBMATRIX_SIZE 1024
 
 #define CONV_FACTOR 57.2957795 // 180/pi
 
@@ -91,34 +91,15 @@ void vox2gal(int voxel_division,int voxel_index,int ngals,int *gal_indices)
 __device__ int distance_to_bin(float dist, float hist_min, float hist_max, int nbins, float bin_width, int flag)
 {
     int bin_index = 0;
-    //float bin_width=(hist_max-hist_min)/nbins;
 
     if(dist < hist_min)
-        return -999;
+        return 0;
+        //return -999;
     else if(dist >= hist_max)
-        return -999;
+        return 0;
+        //return -999;
     else
-        bin_index = int((dist-hist_min)/bin_width);
-    /*
-       else
-       {
-       if (flag==0)
-       {
-    //printf("%f %f %f\n",dist,hist_min,bin_width);
-    //bin_index = int((dist-hist_min)/bin_width) + 1;
-    bin_index = int((dist-hist_min)/bin_width);
-    //printf("here! %d\n",bin_index);
-    }
-    else if (flag==1)// log binning
-    {
-    bin_index = int((log(dist)-log(hist_min))/bin_width);
-    }
-    else if (flag==2)// log 10 binning
-    {
-    bin_index = int((log10(dist)-log10(hist_min))/bin_width);
-    }
-    }
-     */
+        bin_index = floor((dist-hist_min)/bin_width);
 
     return bin_index;
 }
@@ -319,21 +300,24 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
 
                 for (int n=0;n<3;n++)
                 {
+                    i0=0; 
+                    i1=0; 
+                    i2=0; 
                     if (n==0) {
                         s = shortest;
                         q = middle/shortest;
-                        theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))/PI;
+                        theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
                         //theta0 = 0.5;
                         i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
                     } else if (n==1){
                         s = middle;
                         q = longest/middle;
-                        theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))/PI;
+                        theta1 = (acosf((middle2 + longest2 - shortest2)/(2*middle*longest)))*INVPI;
                         i2 = distance_to_bin(theta1,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
                     } else if (n==2){
                         s = shortest;
                         q = longest/shortest;
-                        //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))/PI;
+                        //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
                         theta2 = 1.0 - theta0 - theta1;
                         //i2 = distance_to_bin(0.5,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
                         i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH,flag);
@@ -363,14 +347,26 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                     }
                     */
                     // Increment the ``column" of the histogram
-                    if (i0==49 && i1==15 && i2>=0)
+                    /*
+                    if (i0==49)
+                        i0 = 1;
+                    if (i1==15)
+                        i1 = 1;
+                    if (i2<0)
+                        i2 = 0;
+
+                    totbin = i0*i1*i2;
+                    */
+
+                    //if (i2>=0)
                     //if (1)
+                    //if(totbin>0 && totbin<THETA_NBINS)
+                    if (i0==49 && i1==15 && i2>=0)
                     {
                         atomicAdd(&shared_hist[i2],1);
                         //shared_hist[i2] +=1;
-                        //shared_hist[0] +=1;
-                        //shared_hist[k%THETA_NBINS] += k;
-                        //atomicAdd(&shared_hist[0],1);
+                        //shared_hist[totbin] +=1;
+                        //atomicAdd(&shared_hist[totbin],1);
                     }
 
                 }
@@ -378,7 +374,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
         }
     }
 
-    __syncthreads();
+    //__syncthreads();
 
     if(threadIdx.x==0)
     {
