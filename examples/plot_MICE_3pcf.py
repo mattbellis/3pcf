@@ -237,6 +237,7 @@ for q in qbin:
 
 plt.legend()
 axtpcf.legend()
+axredtpcf.legend()
 plt.tight_layout()
 
 print "Sums: -----------"
