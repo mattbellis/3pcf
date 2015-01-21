@@ -40,14 +40,17 @@ using namespace std;
 #define Q_HI 4.1
 #define Q_WIDTH (Q_HI-Q_LO)/Q_NBINS
 
-#define THETA_NBINS 25
+//#define THETA_NBINS 25
+#define THETA_NBINS 32 // Setting this to 32 saves us 10% in time.
 #define THETA_LO 0.
 #define THETA_HI 1.
 #define THETA_WIDTH (THETA_HI-THETA_LO)/THETA_NBINS
 
 ///////////////////////////////////////////////////////////////////////////////
 
+//#define SUBMATRIX_SIZE 8192
 #define SUBMATRIX_SIZE 4096
+//#define SUBMATRIX_SIZE 2048
 //#define SUBMATRIX_SIZE 1024
 
 #define CONV_FACTOR 57.2957795 // 180/pi
@@ -127,11 +130,11 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
     ////////////////////////////////////////////////////////////////////////
     // Shared memory stuff.
     ////////////////////////////////////////////////////////////////////////
-    __shared__ int shared_hist[THETA_NBINS];
+    __shared__ int shared_hist[THETA_NBINS+128];
     // Note that we only clear things out for the first thread on each block.
     if(threadIdx.x==0)
     {
-        for (int i=0;i<tot_hist_size;i++)
+        for (int i=0;i<tot_hist_size+128;i++)
             shared_hist[i] = 0;
     }
     __syncthreads();
@@ -174,6 +177,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
     float middle2;
     float longest2;
 
+    int offset = 0;
 
     if (idx<max_xind)
     {
@@ -379,11 +383,23 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                     //if (i2>=0)
                     //if (1)
                     //if(totbin>0 && totbin<THETA_NBINS)
-                    if (i0==49 && i1==15 && i2>=0)
+                    i0 = (i0%50)/49;
+                    i1 = (i1%16)/15;
+                    //if (i0==49 && i1==15 && i2>=0)
+
+                    // totbin is 0 if it is not the s or q bin we want.
+                    totbin = i0*i1*i2;
+
+                    // Offset is threadIdx.x + THETA_NBINS for the 0 entries.
+                    offset = ((i0*i1 + 1)%2)*threadIdx.x + ((i0*i1 + 1)%2)*THETA_NBINS;
+
+                    //i2 = (abs(i0)*abs(i1)*abs(i2))%25;
+                    //if(totbin>0)
+                    totbin += offset;
                     {
-                        atomicAdd(&shared_hist[i2],1);
+                        //atomicAdd(&shared_hist[i2],1);
                         //shared_hist[i2] +=1;
-                        //shared_hist[totbin] +=1;
+                        shared_hist[totbin] +=1;
                         //atomicAdd(&shared_hist[totbin],1);
                     }
 
@@ -392,12 +408,13 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
         }
     }
 
-    //__syncthreads();
+    __syncthreads();
 
     if(threadIdx.x==0)
     {
         for(int i=0;i<tot_hist_size;i++)
         {
+            // Only copy the first ``non-zero" entries.
             dev_hist[i+(blockIdx.x*tot_hist_size)]=shared_hist[i];
             //dev_hist[i] = 20;
         }
