@@ -42,6 +42,8 @@ using namespace std;
 
 //#define THETA_NBINS 25
 #define THETA_NBINS 32 // Setting this to 32 saves us 10% in time.
+//#define THETA_NBINS 64 // Setting this to 32 saves us 10% in time.
+//#define THETA_NBINS 128 // Setting this to 32 saves us 10% in time.
 #define THETA_LO 0.
 #define THETA_HI 1.
 #define THETA_WIDTH (THETA_HI-THETA_LO)/THETA_NBINS
@@ -320,6 +322,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                 //dev_test[1] = xpt2;
                 //dev_test[2] = xpt0;
 
+                //int n = 0;
                 for (int n=0;n<3;n++)
                 {
                     i0=0; 
@@ -329,7 +332,6 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         s = shortest;
                         q = middle/shortest;
                         theta0 = (acosf((shortest2 + middle2 - longest2)/(2*shortest*middle)))*INVPI;
-                        //theta0 = 0.5;
                         i2 = distance_to_bin(theta0,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
                     } else if (n==1){
                         s = middle;
@@ -341,16 +343,11 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         q = longest/shortest;
                         //theta2 = (acosf((shortest2 + longest2 - middle2)/(2*shortest*longest)))*INVPI;
                         theta2 = 1.0 - theta0 - theta1;
-                        //i2 = distance_to_bin(0.5,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
                         i2 = distance_to_bin(theta2,THETA_LO,THETA_HI,THETA_NBINS,THETA_WIDTH);
-                        //i2 = 13;
                     }
-
-                    //printf("%f %f %f\n",s,q,theta);
 
                     i0 = distance_to_bin(s,S_LO,S_HI,S_NBINS,S_WIDTH); //Mpc/h, delta s=0.2
                     i1 = distance_to_bin(q,Q_LO,Q_HI,Q_NBINS,Q_WIDTH); // delta q = 0.2
-                    //i2 = distance_to_bin(theta,0,1.0,25,THETA_WIDTH);
 
                     //if (idx==1000 && j==1001 && k==1002)
                     /*
@@ -368,6 +365,7 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         //dev_test[2] = theta2;
                     }
                     */
+
                     // Increment the ``column" of the histogram
                     /*
                     if (i0==49)
@@ -376,7 +374,6 @@ __global__ void distance(float *x0, float *y0, float *z0, float *x1, float *y1, 
                         i1 = 1;
                     if (i2<0)
                         i2 = 0;
-
                     totbin = i0*i1*i2;
                     */
 
@@ -642,6 +639,7 @@ int main(int argc, char **argv)
     //grid.x = 8; // Is this the number of blocks?
     //grid.x = 4; // Is this the number of blocks?
     block.x = SUBMATRIX_SIZE/grid.x; // Is this the number of threads per block? NUM_GALAXIES/block.x;
+    //block.x = 32;
     //block.x = SUBMATRIX_SIZE; // Is this the number of threads per block? NUM_GALAXIES/block.x;
     // SUBMATRIX is the number of threads per warp? Per kernel call?
     printf("# of blocks per grid:  grid.x:  %d\n",grid.x);
