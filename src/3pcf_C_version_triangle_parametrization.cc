@@ -36,7 +36,8 @@ using namespace std;
 #define Q_LO 0.9
 #define Q_HI 4.1
 
-#define THETA_NBINS 25
+//#define THETA_NBINS 25
+#define THETA_NBINS 32
 #define THETA_LO 0.
 #define THETA_HI 1.
 
