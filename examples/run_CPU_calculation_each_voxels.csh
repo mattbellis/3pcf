@@ -28,11 +28,13 @@ endif
 #set input1 = '../sample_data/random_0.025_0.050_xyz_'$ngals'k.dat'
 #set input0 = '../sample_data/wechsler_gals_nearest_cartesian_'$ngals'k.cat'
 #set input1 = '../sample_data/random_gals_nearest_cartesian_'$ngals'k.cat'
-set input0 = '../sample_data/MICE_20degx20deg_'$ngals'k_randomized.dat'
-set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
+#set input0 = '../sample_data/MICE_20degx20deg_'$ngals'k_randomized.dat'
+#set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
 #set input0 = '../sample_data/MICE_5degx5deg_'$ngals'k_randomized.dat'
 #set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 
+set input0 = '../sample_data/MICE_LRGs_10degx10deg.dat'
+set input1 = '../sample_data/flat_MICE_LRGs_10degx10deg.dat'
 
 ################################################################################
 # Read in data.
@@ -40,7 +42,8 @@ set input1 = '../sample_data/flat_MICE_20degx20deg_'$ngals'k.dat'
 set global_params = ' '
 #set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
 #set tag = 'evenbinning_CPU_5degx5deg_LRG_binning_SLAC'
-set tag = 'evenbinning_CPU_20degx20deg_LRG_binning_SLAC'
+#set tag = 'evenbinning_CPU_20degx20deg_LRG_binning_SLAC'
+set tag = 'Debbie_LRG_CPU_10degx10deg_LRG_binning_SLAC'
 
 #set index = `printf "%03d%03d%03d" $i $j $k` 
 echo $index
