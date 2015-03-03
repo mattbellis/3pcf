@@ -33,8 +33,17 @@ endif
 #set input0 = '../sample_data/MICE_5degx5deg_'$ngals'k_randomized.dat'
 #set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 
-set input0 = '../sample_data/MICE_LRGs_10degx10deg.dat'
-set input1 = '../sample_data/flat_MICE_LRGs_10degx10deg.dat'
+#set input0 = '../sample_data/MICE_LRGs_10degx10deg.dat'
+#set input1 = '../sample_data/flat_MICE_LRGs_10degx10deg.dat'
+
+set input0 = '../sample_data/MICE_'$ngals'k_randomized.dat'
+set input1 = '../sample_data/flat_MICE_'$ngals'k.dat'
+
+ls -l $input0
+ls -l $input1
+
+wc -l $input0
+wc -l $input1
 
 ################################################################################
 # Read in data.
@@ -43,7 +52,8 @@ set global_params = ' '
 #set tag = 'evenbinning_CPU_5degx5deg_LRG_binning'
 #set tag = 'evenbinning_CPU_5degx5deg_LRG_binning_SLAC'
 #set tag = 'evenbinning_CPU_20degx20deg_LRG_binning_SLAC'
-set tag = 'Debbie_LRG_CPU_10degx10deg_LRG_binning_SLAC'
+#set tag = 'Debbie_LRG_CPU_10degx10deg_LRG_binning_SLAC'
+set tag = 'MICE_full_sky_CPU_LRG_binning_SLAC'
 
 #set index = `printf "%03d%03d%03d" $i $j $k` 
 echo $index

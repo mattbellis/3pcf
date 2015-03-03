@@ -13,7 +13,7 @@ for i in xrange(vox_div):
             vox_index = "%03d%03d%03d" % (i,j,k)
 
             output = ""
-            name = "./log_Debbie_LRG_10deg_vox_%d_%d_%d_%s.log" % (ngals,which_part,vox_div,vox_index)
+            name = "./log_MICE_full_sky_vox_%d_%d_%d_%s.log" % (ngals,which_part,vox_div,vox_index)
 
             cmd =  ['bsub','-q','xlong']
             cmd += ['-o',name]

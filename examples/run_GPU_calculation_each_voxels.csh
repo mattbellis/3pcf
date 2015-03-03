@@ -32,7 +32,6 @@ endif
 set input0 = '../sample_data/MICE_5degx5deg_'$ngals'k_randomized.dat'
 set input1 = '../sample_data/flat_MICE_5degx5deg_'$ngals'k.dat'
 
-
 ################################################################################
 # Read in data.
 ################################################################################
